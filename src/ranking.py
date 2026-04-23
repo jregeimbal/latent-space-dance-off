@@ -47,7 +47,6 @@ class ModelScore:
     judgment_count: int = 0
 
 
-@dataclass
 class LeaderboardEntry(BaseModel):
     rank: int
     model_name: str
@@ -55,8 +54,8 @@ class LeaderboardEntry(BaseModel):
     aesthetics_score: float
     complexity_score: float
     total_score: float
-    judgment_count: int = Field(default=0)
-    svg_files: List[str] = Field(default_factory=list)
+    judgment_count: int = 0
+    svg_files: List[str] = []
     
     @classmethod
     def from_model_score(cls, model_score, rank, svg_files=None):
@@ -92,9 +91,9 @@ class RankingSystem:
         (Path(self.config.OUTPUT_DIR) / self.config.svgs_dir).mkdir(parents=True, exist_ok=True)
     
     def aggregate_all_judgments(self, run_data, judgments):
-        # Use run_data.themes and run_data.models from RunData
+         # Use run_data.themes and run_data.models from RunData
         scores = {}
-        for model_name in run_data.models:
+        for model_name in run_data.model_list:
             scores[model_name] = ModelScore(
                 model_name=model_name,
                 creativity_score=0.0,
@@ -153,7 +152,7 @@ class RankingSystem:
             run_id=run_data.run_id,
             timestamp=run_data.timestamp,
             total_judgments=len(run_data.judgments),
-            total_models=len(run_data.models),
+            total_models=len(run_data.model_list),
             rankings=rankings,
             meta={'themes': run_data.themes}
         )

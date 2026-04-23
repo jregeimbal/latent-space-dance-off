@@ -42,6 +42,7 @@ class RunData(BaseModel):
     benchmarks: List[BenchmarkRecord]
     model_list: List[str]
     themes: List[str]
+    judgments: List = []
 
 
 class BenchmarkManager:

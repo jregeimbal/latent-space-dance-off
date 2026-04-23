@@ -73,11 +73,11 @@ def list_models(ollama_host: str = typer.Option("http://localhost:11434", "--oll
     table.add_column("Size", style="magenta")
     table.add_column("Modified", style="yellow")
 
-    for model in models:
+    for model_name in models:
         table.add_row(
-            model.name if hasattr(model, "name") else "Unknown",
-            str(model.size if hasattr(model, "size") else 0) if hasattr(model, "size") else "N/A",
-            str(model.modified_at if hasattr(model, "modified_at") else "") if hasattr(model, "modified_at") else "N/A"
+            model_name if model_name else "Unknown",
+            "N/A",
+            "N/A"
          )
 
     console.print(table)
@@ -126,7 +126,7 @@ def run(
     model_clients = {}
     for model_name in model_list:
         try:
-            client = model_manager.get_model(model_name)
+            client = asyncio.run(model_manager.get_model(model_name))
             model_clients[model_name] = client
             console.print(f"[green]Model {model_name} ready[/green]")
         except Exception as e:
@@ -175,20 +175,20 @@ def run(
     run_data = RunData(
         run_id=run_id,
         timestamp=run_id,
-        models=list(model_clients.keys()),
-        themes=theme_list,
-        generations=[
-            {
-                "model": r.model_name,
-                "theme": r.theme,
-                "svg_file": r.svg_path,
-                "duration_ms": r.duration_ms,
-                "tokens": int(r.tokens_used) if r.tokens_used else None
-            }
-            for r in svg_results
-        ],
-        output_dir=output_dir
-    )
+        svgs=[SVGResult(
+            model_name=r.model_name,
+            theme=r.theme,
+            svg_code=r.svg_code,
+            svg_path=r.svg_path,
+            duration_ms=r.duration_ms,
+            tokens_used=int(r.tokens_used) if r.tokens_used else None,
+            status=r.status,
+            error_message=r.error_message
+         ) for r in svg_results],
+        benchmarks=[],
+        model_list=list(model_clients.keys()),
+        themes=theme_list
+     )
 
     benchmark_manager.save_run_data(run_data)
     console.print(f"\n[yellow]Benchmark data saved to: {benchmark_manager.benchmarks_dir}/{run_id}.json[/yellow]")

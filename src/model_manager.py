@@ -2,7 +2,7 @@
 
 import asyncio
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import List, Optional
 from ollama import AsyncClient
 from pydantic import BaseModel
 
@@ -21,7 +21,7 @@ class ModelManager:
         """Initialize the ModelManager with a host URL."""
         self._host = host
         self._client: Optional[AsyncClient] = None
-        self._models_cache: Optional[List[dict]] = None
+        self._models_cache: Optional[List[ModelInfo]] = None
 
     def _get_client(self) -> AsyncClient:
         """Get or create the AsyncClient instance."""
@@ -35,16 +35,27 @@ class ModelManager:
         response = await client.list()
 
         models = []
-        if response and "models" in response:
-            for model in response["models"]:
-                modified = model.get("modified_at", "")
-                if isinstance(modified, datetime):
-                    modified = str(modified)
-                models.append(ModelInfo(
-                    name=model.get("name", ""),
-                    size=model.get("size", 0),
-                    modified_at=modified
-                ))
+        if not response or "models" not in response:
+            return []
+
+        for model in response["models"]:
+            # Handle Model objects from Ollama (attribute is 'model', not 'name')
+            if hasattr(model, "model"):
+                name = model.model
+                size = model.size if hasattr(model, 'size') else 0
+                modified_at = model.modified_at if hasattr(model, 'modified_at') else ""
+                if isinstance(modified_at, datetime):
+                    modified_at = str(modified_at)
+            else:
+                name = model.get("name", "") if isinstance(model, dict) else ""
+                size = model.get("size", 0) if isinstance(model, dict) else 0
+                modified_at = model.get("modified_at", "") if isinstance(model, dict) else ""
+
+            models.append(ModelInfo(
+                name=name,
+                size=size,
+                modified_at=str(modified_at) if modified_at else ""
+            ))
 
         return models
 
@@ -64,6 +75,8 @@ class ModelManager:
     async def get_model(self, model_name: str) -> AsyncClient:
         """Get an AsyncClient for a specific model."""
         client = self._get_client()
+        # Test model by generating a simple response
+        await client.generate(model=model_name, prompt="Test", stream=False)
         return client
 
 
