@@ -10,22 +10,26 @@ import re
 import time
 from pathlib import Path
 from typing import Dict, List, Optional
+from rich.progress import TaskID, Progress
 
+from ollama import AsyncClient
 from pydantic import BaseModel, Field
+from rich.console import Console
 
+console = Console()
 
 class Judgment(BaseModel):
     """Represents a single judgment made by a model about an SVG."""
 
     svg_id: str
+    svg_model_name: str
     judged_by: str
-    creativity_score: Optional[float] = Field(None, ge=1, le=10)
-    aesthetics_score: Optional[float] = Field(None, ge=1, le=10)
-    complexity_score: Optional[float] = Field(None, ge=1, le=10)
+    scores: Dict[str, Optional[float]] = Field(default_factory=dict, description="Dynamic scores for each criterion")
     total_score: Optional[float] = Field(None, ge=1, le=10)
     reason: Optional[str] = Field(None, description="Reasoning for the judgment")
     rank: Optional[int] = Field(None, description="Ranking among compared SVGs")
     winner_svg: Optional[str] = Field(None, description="Winner in head-to-head")
+    criteria_used: List[str] = Field(default_factory=lambda: ["creativity", "aesthetics", "complexity"], description="List of criteria used for this judgment")
 
 
 class Comparison(BaseModel):
@@ -45,22 +49,36 @@ class SVGJudge:
         self.config = config
         self.num_judges = config.NUM_JUDGES if hasattr(config, 'NUM_JUDGES') else 3
 
-    async def judge_svg(self, judge_model, svg_path: Path, svg_content: str, svg_id: str) -> Judgment:
+    async def judge_svg(self, model_client: AsyncClient, svg_path: Path, svg_content: str, svg_id: str, model_name: str, judge_name: str, generation_prompt: Optional[str] = None) -> Judgment:
+        # Build prompt with dynamic criteria
+        criteria = self.config.judging_criteria
+        criterion_descriptions = {
+            "creativity": "How original and innovative is this design?",
+            "aesthetics": "How visually pleasing and well-composed is this SVG?",
+            "complexity": "How sophisticated and detailed is this artwork?",
+            "color_harmony": "How well do the colors work together?",
+            "composition": "How balanced and well-structured is the composition?",
+            "technical_quality": "How technically sound is the SVG code?",
+            "accuracy": "How accurate is the SVG with what was prompted?",
+        }
+        
+        criterion_prompts = ""
+        score_fields = ""
+        for criterion in criteria:
+            description = criterion_descriptions.get(criterion, f"How good is this SVG for {criterion}?")
+            criterion_prompts += f"\n**{criterion.capitalize()}**: {description}"
+            score_fields += f'      "{criterion}_score": <1-10>,\n'
+        
         prompt = f"""You are an expert art critic and AI judge.
 You are judging an SVG artwork created by an AI.
-Rate this SVG on a scale of 1-10 for each category:
+Rate this SVG on a scale of 1-10 for each category:{criterion_prompts}
 
-**Creativity**: How original and innovative is this design?
-**Aesthetics**: How visually pleasing and well-composed is this SVG?
-**Complexity**: How sophisticated and detailed is this artwork?
+This SVG was generated from the following prompt:
+{generation_prompt[:2000] if generation_prompt else 'No prompt provided.'}
 
 Provide your scores as a JSON object:
 {{
-    "creativity_score": <1-10>,
-    "aesthetics_score": <1-10>,
-    "complexity_score": <1-10>,
-    "reason": "<brief explanation>"
-}}
+{score_fields}       "reason": "<brief explanation>"
 
 SVG Content:
 {svg_content[:5000]}
@@ -68,38 +86,52 @@ SVG Content:
 Respond with ONLY the JSON object."""
 
         try:
-            response = await judge_model.generate(
-                model="llama3",
+            response = await model_client.generate(
+                model=model_name,
                 prompt=prompt,
-                format="json",
                 stream=False
-            )
-            tokens = response.get('response') if isinstance(response, dict) else str(response)
-            data = self._parse_json_response(tokens)
+             )
+            svg_output = getattr(response, 'response', None) or str(response)
+            data = self._parse_json_response(svg_output)
+
+             # Extract scores for each criterion
+            scores = {}
+            total = 0.0
+            count = 0
+            for criterion in self.config.judging_criteria:
+                score_key = f'{criterion}_score'
+                score_val = float(data.get(score_key, 5))
+                scores[criterion] = score_val
+                total += score_val
+                count += 1
+            
+            avg_total = total / count if count > 0 else 5.0
 
             return Judgment(
                 svg_id=svg_id,
-                judged_by="llama3",
-                creativity_score=float(data.get('creativity_score', 5)),
-                aesthetics_score=float(data.get('aesthetics_score', 5)),
-                complexity_score=float(data.get('complexity_score', 5)),
-                total_score=self._calculate_total(
-                    float(data.get('creativity_score', 5)),
-                    float(data.get('aesthetics_score', 5)),
-                    float(data.get('complexity_score', 5))
-                ),
-                reason=data.get('reason', 'No reasoning provided')
-            )
+                svg_model_name=model_name,
+                judged_by=judge_name,
+                scores=scores,
+                total_score=avg_total,
+                reason=data.get('reason', 'No reasoning provided'),
+                rank=None,
+                winner_svg=None,
+                criteria_used=self.config.judging_criteria
+             )
         except Exception as e:
+            console.print(f"[red]Error during judging SVG {svg_id} with model {model_name}: {str(e)}[/red]")
+            scores: Dict[str, Optional[float]] = {criterion: 5.0 for criterion in self.config.judging_criteria}
             return Judgment(
                 svg_id=svg_id,
-                judged_by="llama3",
-                creativity_score=5.0,
-                aesthetics_score=5.0,
-                complexity_score=5.0,
+                svg_model_name=model_name,
+                judged_by=judge_name,
+                scores=scores,
                 total_score=5.0,
-                reason=f"Error during judging: {str(e)}"
-            )
+                reason=f"Error during judging: {str(e)}",
+                rank=None,
+                winner_svg=None,
+                criteria_used=self.config.judging_criteria
+                  )
 
     def _calculate_total(self, creativity: float, aesthetics: float, complexity: float) -> float:
         return (creativity + aesthetics + complexity) / 3
@@ -155,7 +187,7 @@ Respond with ONLY the JSON."""
                 stream=False
             )
             tokens = response.get('response') if isinstance(response, dict) else str(response)
-            data = self._parse_json_response(tokens)
+            data = self._parse_json_response(tokens if tokens else '{}')
             winner = data.get('winner', svg1_id)
             return Comparison(
                 svg1_model=svg1_id.split('_')[0],
@@ -171,24 +203,35 @@ Respond with ONLY the JSON."""
                 reasoning=f"Error: {str(e)}"
             )
 
-    async def run_all_judgments(self, judge_models: List, svg_results: List, 
-                                 num_judges: Optional[int] = None) -> List[Judgment]:
+    async def run_all_judgments(self, model_clients: Dict, svg_results: List, 
+                                 num_judges: Optional[int] = None, 
+                                 progress: Optional[Progress] = None,
+                                 judge_task: Optional[TaskID] = None) -> List[Judgment]:
         judge_count = num_judges or self.num_judges
-        selected_judges = judge_models[:] if len(judge_models) >= judge_count else judge_models * judge_count
         judgments = []
         svg_list = svg_results.copy()
         random.shuffle(svg_list)
 
-        for svg_result in svg_list:
-            svg_id = f"{svg_result.model_name}_{svg_result.theme}"
-            for judge_model in selected_judges:
-                judgment = await self.judge_svg(
-                    judge_model=judge_model,
-                    svg_path=Path(svg_result.svg_path) if svg_result.svg_path else None,
-                    svg_content=svg_result.svg_code,
-                    svg_id=svg_id
-                )
-                judgments.append(judgment)
+        for model_name in model_clients:
+            for svg_result in svg_list:
+                svg_id = f"{svg_result.model_name}_{svg_result.theme}"
+                for judge_idx in [1]:
+                    if progress and judge_task is not None:
+                        progress.update(judge_task, description=f"Judging {svg_id} with {model_name}")
+
+                    judgment = await self.judge_svg(
+                        model_client=model_clients[model_name],
+                        model_name=svg_result.model_name,
+                        judge_name=f"judge_{model_name}_{judge_idx}",
+                        svg_path=Path(svg_result.svg_path) if svg_result.svg_path else Path("/dev/null"),
+                        svg_content=svg_result.svg_code,
+                        svg_id=svg_id,
+                        generation_prompt=svg_result.generation_prompt
+                     )
+                    # Update progress as judgments complete
+                    if progress and judge_task is not None:
+                        progress.update(judge_task, advance=len(judgments))
+                    judgments.append(judgment)
         return judgments
 
     def aggregate_judgments(self, svg_results: List, judgments: List) -> Dict[str, Dict]:
@@ -200,20 +243,28 @@ Respond with ONLY the JSON."""
             if not svg_judgments:
                 continue
 
-            creativity_scores = [j.creativity_score for j in svg_judgments if j.creativity_score is not None]
-            aesthetics_scores = [j.aesthetics_score for j in svg_judgments if j.aesthetics_score is not None]
-            complexity_scores = [j.complexity_score for j in svg_judgments if j.complexity_score is not None]
+            # Aggregate scores for each criterion dynamically
+            criterion_scores = {}
+            for criterion in self.config.judging_criteria:
+                scores = [j.scores.get(criterion, 5.0) for j in svg_judgments if j.scores.get(criterion) is not None]
+                criterion_scores[criterion] = sum(scores) / len(scores) if scores else 5.0
 
-            avg_creativity = sum(creativity_scores) / len(creativity_scores) if creativity_scores else 5.0
-            avg_aesthetics = sum(aesthetics_scores) / len(aesthetics_scores) if aesthetics_scores else 5.0
-            avg_complexity = sum(complexity_scores) / len(complexity_scores) if complexity_scores else 5.0
+            # Calculate total using config weights if available
+            total = 0.0
+            for criterion in self.config.judging_criteria:
+                weight_key = f'DEFAULT_{criterion.upper()}_WEIGHT'
+                weight = getattr(self.config, weight_key, 1.0 / len(self.config.judging_criteria))
+                total += criterion_scores[criterion] * weight
+            
+            # If weights don't sum to 1, normalize
+            if len(self.config.judging_criteria) > 0:
+                total = total / len(self.config.judging_criteria)
 
             aggregated[model_name] = {
-                'creativity': avg_creativity,
-                'aesthetics': avg_aesthetics,
-                'complexity': avg_complexity,
-                'total': (avg_creativity + avg_aesthetics + avg_complexity) / 3,
+                **criterion_scores,
+                'total': total,
                 'judgment_count': len(svg_judgments),
-                'themes': [svg_result.theme for svg_result in svg_results if svg_result.model_name == model_name]
+                'themes': [svg_result.theme for svg_result in svg_results if svg_result.model_name == model_name],
+                'criteria': self.config.judging_criteria
             }
         return aggregated

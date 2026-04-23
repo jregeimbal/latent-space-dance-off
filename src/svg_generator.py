@@ -12,6 +12,9 @@ from typing import Dict, List, Optional, Tuple
 
 from ollama import AsyncClient
 from pydantic import BaseModel, Field
+from rich.console import Console
+
+console = Console()
 
 
 class SVGResult(BaseModel):
@@ -36,6 +39,8 @@ class SVGResult(BaseModel):
 
     error_message: Optional[str] = Field(None, description="Error message if generation failed")
 
+    generation_prompt: Optional[str] = Field(None, description="The prompt used to generate this SVG")
+
 
 class SVGGenerator:
     """
@@ -52,11 +57,24 @@ class SVGGenerator:
         svgs_dir: Path to SVGs output directory
     """
 
-    def __init__(self, config) -> None:
-        """Initialize SVGGenerator with configuration."""
+    def __init__(self, config, svgs_dir: Optional[Path] = None) -> None:
+        """Initialize SVGGenerator with configuration.
+        
+        Args:
+            config: Application configuration object.
+            svgs_dir: Optional explicit directory for SVG output. If not provided,
+                     falls back to config.svgs_dir. Useful for per-run output directories.
+        """
         self.config = config
-        self.svgs_dir = Path(config.svgs_dir)
+        self.svgs_dir = svgs_dir if svgs_dir is not None else Path(config.svgs_dir)
         self.svgs_dir.mkdir(parents=True, exist_ok=True)
+
+    def generate_generic_svg_prompt(self, theme: str, model_name: str) -> str:
+        """Generate prompt for generic SVG."""
+        return f"""{theme}
+
+Your SVG should be at least 400x400 pixels and use SVG elements like:
+<rect>, <circle>, <ellipse>, <polygon>, <polyline>, <path>, <line>"""
 
     def generate_abstract_svg_prompt(self, model_name: str) -> str:
         """Generate prompt for abstract SVG."""
@@ -134,7 +152,7 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
 
         prompt_func = prompts.get(theme)
         if not prompt_func:
-            prompt_func = self.generate_abstract_svg_prompt
+            prompt_func = lambda model_name: self.generate_generic_svg_prompt(theme, model_name)
 
         return prompt_func(model_name)
 
@@ -163,7 +181,7 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
 
         return text[start:end + 6]
 
-    async def generate_svg(self, model_client: AsyncClient, theme: str, model_name: str, run_id: str = None) -> SVGResult:
+    async def generate_svg(self, model_client: AsyncClient, theme: str, model_name: str, run_id: Optional[str] = None) -> SVGResult:
         """Generate SVG by calling the model."""
         start_time = time.perf_counter()
 
@@ -182,7 +200,8 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
             duration_ms = (time.perf_counter() - start_time) * 1000
               # Ollama returns Model object with attr 'response', not dict
             svg_output = getattr(response, 'response', None) or str(response)
-            tokens_evaluated = getattr(response, 'prompt_eval_count', None)
+            tokens_evaluated = getattr(response, 'eval_count', None)
+            prompt_tokens_evaluated = getattr(response, 'prompt_eval_count', None)
             tokens = svg_output
             
              # Extract SVG
@@ -206,10 +225,13 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
                 svg_path=str(svg_path),
                 duration_ms=duration_ms,
                 tokens_used=tokens_evaluated,
-                status="success"
+                status="success",
+                error_message=None,
+                generation_prompt=prompt
              )
 
         except Exception as e:
+            console.print(f"[red]Error generating SVG for model {model_name} and theme {theme}: {e}[/red]")
             duration_ms = (time.perf_counter() - start_time) * 1000
             return SVGResult(
                 model_name=model_name,
@@ -219,8 +241,9 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
                 duration_ms=duration_ms,
                 tokens_used=None,
                 status="failed",
-                error_message=str(e)
-            )
+                error_message=str(e),
+                generation_prompt=prompt
+             )
 
     async def _save_svg(self, svg_code: str, filepath: Path) -> None:
         """Save SVG code to file."""

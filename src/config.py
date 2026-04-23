@@ -38,6 +38,28 @@ class Config(BaseModel):
         le=10,
         description="Number of SVG themes per model"
     )
+    DEFAULT_CREATIVITY_WEIGHT: float = Field(
+        default=0.33,
+        ge=0,
+        le=1,
+        description="Weight for creativity score in final ranking"
+    )
+    DEFAULT_AESTHETICS_WEIGHT: float = Field(
+        default=0.33,
+        ge=0,
+        le=1,
+        description="Weight for aesthetics score in final ranking"
+    )
+    DEFAULT_COMPLEXITY_WEIGHT: float = Field(
+        default=0.34,
+        ge=0,
+        le=1,
+        description="Weight for complexity score in final ranking"
+    )
+    JUDGING_CRITERIA: str = Field(
+        default="creativity,aesthetics,complexity",
+        description="Comma-separated list of judging criteria"
+    )
 
     class Config:
         """Pydantic configuration."""
@@ -57,6 +79,13 @@ class Config(BaseModel):
         if not self.MODEL_LIST:
             return []
         return [m.strip() for m in self.MODEL_LIST.split(',') if m.strip()]
+
+    @property
+    def judging_criteria(self) -> List[str]:
+        """Parse JUDGING_CRITERIA into list of criterion names."""
+        if not self.JUDGING_CRITERIA:
+            return ["creativity", "aesthetics", "complexity"]
+        return [c.strip() for c in self.JUDGING_CRITERIA.split(',') if c.strip()]
 
     @property
     def svgs_dir(self) -> Path:
