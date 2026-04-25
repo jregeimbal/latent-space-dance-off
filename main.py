@@ -280,10 +280,10 @@ async def _run_impl(
         table.add_column("Total", justify="right", style="bold green")
 
         for entry in leaderboard.rankings:
-              # Get scores for each criterion dynamically
+               # Get scores for each criterion dynamically
             score_values = []
             for criterion in config.judging_criteria:
-                score_val = getattr(entry, f'{criterion}_score', 0)
+                score_val = entry.get_score(criterion) if hasattr(entry, 'get_score') else getattr(entry, f'{criterion}_score', 0)
                 score_values.append(f"{score_val:.2f}")
             
             score_values.append(f"{entry.total_score:.2f}")
@@ -292,7 +292,7 @@ async def _run_impl(
                 str(entry.rank),
                 entry.model_name,
                 entry.svg_id,
-                 *score_values                )
+                  *score_values                 )
         console.print(table)
         console.print(f"\n[yellow]Leaderboard saved to: {leaderboard_path}[/yellow]")
     else:
@@ -349,11 +349,11 @@ def leaderboard(
                 str(entry.rank),
                 entry.model_name,
                 entry.svg_id,
-                f"{entry.creativity_score:.2f}",
-                f"{entry.aesthetics_score:.2f}",
-                f"{entry.complexity_score:.2f}",
+                f"{entry.get_score('creativity'):.2f}",
+                f"{entry.get_score('aesthetics'):.2f}",
+                f"{entry.get_score('complexity'):.2f}",
                 f"{entry.total_score:.2f}"
-              )
+               )
 
         console.print(table)
         csv_path = ranking_system.export_to_csv(leaderboard_obj)

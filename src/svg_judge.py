@@ -249,16 +249,12 @@ Respond with ONLY the JSON."""
                 scores = [j.scores.get(criterion, 5.0) for j in svg_judgments if j.scores.get(criterion) is not None]
                 criterion_scores[criterion] = sum(scores) / len(scores) if scores else 5.0
 
-            # Calculate total using config weights if available
+             # Calculate total as simple average of criterion scores
             total = 0.0
-            for criterion in self.config.judging_criteria:
-                weight_key = f'DEFAULT_{criterion.upper()}_WEIGHT'
-                weight = getattr(self.config, weight_key, 1.0 / len(self.config.judging_criteria))
-                total += criterion_scores[criterion] * weight
-            
-            # If weights don't sum to 1, normalize
-            if len(self.config.judging_criteria) > 0:
-                total = total / len(self.config.judging_criteria)
+            counted_criteria = [c for c in self.config.judging_criteria if c in criterion_scores]
+            if counted_criteria:
+                total += sum(criterion_scores[c] for c in counted_criteria)
+                total = total / len(counted_criteria)
 
             aggregated[model_name] = {
                 **criterion_scores,

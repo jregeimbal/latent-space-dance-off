@@ -47,36 +47,39 @@ class SVGScore:
     complexity_score: float = 0.0
     total_score: float = 0.0
     judgment_count: int = 0
-    scores: Optional[dict] = None   # Dynamic scores for custom criteria
+    scores: Optional[dict] = None    # Dynamic scores for custom criteria
     
     def __post_init__(self):
         if self.scores is None:
             self.scores = {}
 
+    def get_score(self, criterion: str) -> float:
+        return self.scores.get(criterion, 0.0) if self.scores else 0.0
+
 
 class LeaderboardEntry(BaseModel):
-    rank: int
-    svg_id: str
-    creativity_score: float
-    aesthetics_score: float
-    complexity_score: float
-    total_score: float
+    rank: int = 0
+    svg_id: str = ""
+    model_name: str = ""
+    total_score: float = 0.0
     judgment_count: int = 0
     svg_files: List[str] = []
-    model_name: str
+    scores: Dict[str, float] = Field(default_factory=dict)
+
+    def get_score(self, criterion: str) -> float:
+        return self.scores.get(criterion, 0.0)
     
     @classmethod
     def from_svg_score(cls, svg_score, rank, svg_files=None):
+        scores = dict(svg_score.scores) if svg_score.scores else {}
         return cls(
             rank=rank,
             svg_id=svg_score.svg_id,
             model_name=svg_score.model_name,
-            creativity_score=svg_score.creativity_score,
-            aesthetics_score=svg_score.aesthetics_score,
-            complexity_score=svg_score.complexity_score,
             total_score=svg_score.total_score,
             judgment_count=svg_score.judgment_count,
-            svg_files=svg_files or []
+            svg_files=svg_files or [],
+            scores=scores
         )
 
 
@@ -151,16 +154,12 @@ class RankingSystem:
                 for criterion in svg_score.scores:
                     svg_score.scores[criterion] /= svg_score.judgment_count
                 
-                  # Calculate total using config weights if available
+                 # Calculate total as simple average of criterion scores
                 total = 0.0
                 for criterion in self.config.judging_criteria:
-                    weight_key = f'DEFAULT_{criterion.upper()}_WEIGHT'
-                    weight = getattr(self.config, weight_key, 1.0 / len(self.config.judging_criteria))
-                    total += svg_score.scores.get(criterion, 0.0) * weight
-                
-                  # If weights don't sum to 1, normalize
-                if len(self.config.judging_criteria) > 0:
-                    total = total / len(self.config.judging_criteria)
+                    total += svg_score.scores.get(criterion, 0.0)
+                if len(svg_score.scores) > 0:
+                    total = total / len(svg_score.scores)
                 
                 svg_score.total_score = total
         return scores
@@ -214,9 +213,9 @@ class RankingSystem:
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(','.join(headers) + chr(10))
             for entry in leaderboard.rankings:
-                row = [str(entry.rank), entry.svg_id, 
-                       f"{entry.creativity_score:.2f}", f"{entry.aesthetics_score:.2f}",
-                       f"{entry.complexity_score:.2f}", f"{entry.total_score:.2f}"]
+                row = [str(entry.rank), entry.svg_id,
+                       f"{entry.get_score('creativity'):.2f}", f"{entry.get_score('aesthetics'):.2f}",
+                       f"{entry.get_score('complexity'):.2f}", f"{entry.total_score:.2f}"]
                 f.write(','.join(row) + chr(10))
         return str(filepath)
     
@@ -229,8 +228,8 @@ class RankingSystem:
     def get_svg_stats(self, leaderboard, svg_id):
         for entry in leaderboard.rankings:
             if entry.svg_id == svg_id:
-                return {'rank': entry.rank, 'creativity': entry.creativity_score,
-                        'aesthetics': entry.aesthetics_score, 'complexity': entry.complexity_score,
-                        'total': entry.total_score, 'judgments_received': entry.judgment_count,
-                        'svg_files': entry.svg_files}
+                return {'rank': entry.rank, 'creativity': entry.get_score('creativity'),
+                         'aesthetics': entry.get_score('aesthetics'), 'complexity': entry.get_score('complexity'),
+                         'total': entry.total_score, 'judgments_received': entry.judgment_count,
+                         'svg_files': entry.svg_files}
         return None

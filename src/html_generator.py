@@ -341,23 +341,24 @@ def _build_html(run_id: str, timestamp: str, models: List[str],
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>Latent Space Dance Off</h1>
-    <div class="meta">
-      Run: {html.escape(run_id)} | Timestamp: {html.escape(timestamp)} | 
-      Models: {len(models)} | Themes: {len(themes)}
+    <div class="header">
+        <h1>Latent Space Dance Off</h1>
+        <div class="meta">
+         Run: {html.escape(run_id)} | Timestamp: {html.escape(timestamp)} | 
+         Models: {len(models)} | Themes: {len(themes)}
+        </div>
+        <div class="criteria-display">
+         Judging Criteria: <span>{html.escape(criteria_display)}</span>
+        </div>
     </div>
-      <div class="criteria-display">
-      Judging Criteria: <span>{html.escape(criteria_display)}</span>
-      </div>
-    <div class="corner"></div>
-    
-    <!-- Model labels (X-axis) -->
+     <div class="grid-container">
+       <div class="corner"></div>
+      <!-- Model labels (X-axis) -->
 {model_labels_html}
     
-    <!-- Grid rows with theme labels and cells -->
+      <!-- Grid rows with theme labels and cells -->
 {"".join(_build_row_html(theme, models, svg_lookup, judgments_lookup) for theme in themes)}
-  </div>
+     </div>
 </body>
 </html>'''
 
