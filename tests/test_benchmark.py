@@ -158,12 +158,14 @@ class TestRunData:
 class TestBenchmarkManager:
     def test___init___uses_config_output_dir_and_creates_it(self, mock_config, tmp_path):
         mock_config.OUTPUT_DIR = str(tmp_path)
+        mock_config.benchmarks_dir = tmp_path / "benchmarks"
         manager = BenchmarkManager(mock_config)
         assert manager.output_dir == Path(str(tmp_path))
         assert tmp_path.exists()
 
     def test_generate_run_id_returns_iso_timestamp_string(self, mock_config, tmp_path):
         mock_config.OUTPUT_DIR = str(tmp_path)
+        mock_config.benchmarks_dir = tmp_path / "benchmarks"
         manager = BenchmarkManager(mock_config)
         run_id = manager.generate_run_id()
         assert isinstance(run_id, str)
@@ -172,18 +174,21 @@ class TestBenchmarkManager:
 
     def test_calculate_tokens_per_second_normal(self, mock_config, tmp_path):
         mock_config.OUTPUT_DIR = str(tmp_path)
+        mock_config.benchmarks_dir = tmp_path / "benchmarks"
         manager = BenchmarkManager(mock_config)
         result = manager.calculate_tokens_per_second(1000, 2000)
         assert result == 500.0
 
     def test_calculate_tokens_per_second_zero_duration(self, mock_config, tmp_path):
         mock_config.OUTPUT_DIR = str(tmp_path)
+        mock_config.benchmarks_dir = tmp_path / "benchmarks"
         manager = BenchmarkManager(mock_config)
         result = manager.calculate_tokens_per_second(1000, 0)
         assert result == 0.0
 
     def test_calculate_tokens_per_second_decimal(self, mock_config, tmp_path):
         mock_config.OUTPUT_DIR = str(tmp_path)
+        mock_config.benchmarks_dir = tmp_path / "benchmarks"
         manager = BenchmarkManager(mock_config)
         result = manager.calculate_tokens_per_second(100, 333)
         assert isinstance(result, float)
@@ -191,6 +196,7 @@ class TestBenchmarkManager:
 
     def test_record_generation_creates_benchmark_record(self, mock_config, tmp_path):
         mock_config.OUTPUT_DIR = str(tmp_path)
+        mock_config.benchmarks_dir = tmp_path / "benchmarks"
         manager = BenchmarkManager(mock_config)
         svg_result = SVGResult(
             model_name="model_a",
@@ -214,6 +220,7 @@ class TestBenchmarkManager:
 
     def test_save_run_data_writes_json_and_creates_run_dir_with_assets(self, mock_config, tmp_path):
         mock_config.OUTPUT_DIR = str(tmp_path)
+        mock_config.benchmarks_dir = tmp_path / "benchmarks"
         manager = BenchmarkManager(mock_config)
         run_data = RunData(
             run_id="save-test-001",
@@ -240,7 +247,7 @@ class TestBenchmarkManager:
             themes=["abstract"],
         )
         manager.save_run_data(run_data)
-        run_dir = tmp_path / "save-test-001"
+        run_dir = tmp_path / "benchmarks" / "save-test-001"
         assert run_dir.exists()
         assert (run_dir / "benchmark.json").exists()
         assert (run_dir / "assets").exists()
@@ -253,6 +260,7 @@ class TestBenchmarkManager:
 
     def test_load_run_data_round_trip(self, mock_config, tmp_path):
         mock_config.OUTPUT_DIR = str(tmp_path)
+        mock_config.benchmarks_dir = tmp_path / "benchmarks"
         manager = BenchmarkManager(mock_config)
         run_data = RunData(
             run_id="roundtrip-001",
@@ -309,12 +317,14 @@ class TestBenchmarkManager:
 
     def test_load_run_data_file_not_found(self, mock_config, tmp_path):
         mock_config.OUTPUT_DIR = str(tmp_path)
+        mock_config.benchmarks_dir = tmp_path / "benchmarks"
         manager = BenchmarkManager(mock_config)
         with pytest.raises(FileNotFoundError):
             manager.load_run_data("nonexistent-run")
 
     def test_get_latest_run_id_with_runs(self, mock_config, tmp_path):
         mock_config.OUTPUT_DIR = str(tmp_path)
+        mock_config.benchmarks_dir = tmp_path / "benchmarks"
         manager = BenchmarkManager(mock_config)
         run_data_a = RunData(
             run_id="run-alpha",
@@ -339,12 +349,14 @@ class TestBenchmarkManager:
 
     def test_get_latest_run_id_without_runs(self, mock_config, tmp_path):
         mock_config.OUTPUT_DIR = str(tmp_path)
+        mock_config.benchmarks_dir = tmp_path / "benchmarks"
         manager = BenchmarkManager(mock_config)
         latest = manager.get_latest_run_id()
         assert latest is None
 
     def test_get_all_runs_sorted(self, mock_config, tmp_path):
         mock_config.OUTPUT_DIR = str(tmp_path)
+        mock_config.benchmarks_dir = tmp_path / "benchmarks"
         manager = BenchmarkManager(mock_config)
         for run_id in ["run-003", "run-001", "run-002"]:
             data = RunData(
@@ -363,12 +375,14 @@ class TestBenchmarkManager:
 
     def test_start_timer_returns_number(self, mock_config, tmp_path):
         mock_config.OUTPUT_DIR = str(tmp_path)
+        mock_config.benchmarks_dir = tmp_path / "benchmarks"
         manager = BenchmarkManager(mock_config)
         start = manager.start_timer()
         assert isinstance(start, float)
 
     def test_stop_timer_returns_duration_ms(self, mock_config, tmp_path):
         mock_config.OUTPUT_DIR = str(tmp_path)
+        mock_config.benchmarks_dir = tmp_path / "benchmarks"
         manager = BenchmarkManager(mock_config)
         start = manager.start_timer()
         time.sleep(0.05)

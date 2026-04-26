@@ -62,8 +62,8 @@ class BenchmarkManager:
         return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")
     
     def _ensure_run_dir(self, run_id: str) -> Path:
-        """Create and return the run directory: output/{run_id}/"""
-        run_dir = self.output_dir / run_id
+        """Create and return the run directory: output/benchmarks/{run_id}/"""
+        run_dir = self.config.benchmarks_dir / run_id
         run_dir.mkdir(parents=True, exist_ok=True)
         (run_dir / "assets").mkdir(parents=True, exist_ok=True)
         self._current_run_dir = run_dir
@@ -129,7 +129,7 @@ class BenchmarkManager:
         return run_data.run_id
     
     def load_run_data(self, run_id):
-        run_dir = self.output_dir / run_id
+        run_dir = self.config.benchmarks_dir / run_id
         filepath = run_dir / "benchmark.json"
         if not filepath.exists():
             raise FileNotFoundError(f"No benchmark data found for run_id: {run_id}")
@@ -178,13 +178,13 @@ class BenchmarkManager:
     
     def get_latest_run_id(self):
         try:
-            # Find directories (new structure) first, then fall back to flat JSON files
-            run_dirs = [d for d in self.output_dir.iterdir() if d.is_dir() and not d.name.startswith('.')]
+             # Find directories (new structure) first, then fall back to flat JSON files
+            run_dirs = [d for d in self.config.benchmarks_dir.iterdir() if d.is_dir() and not d.name.startswith('.')]
             if run_dirs:
                 sorted_dirs = sorted(run_dirs, key=lambda d: d.name, reverse=True)
                 return sorted_dirs[0].name
-            # Fallback: look for flat benchmark JSON files
-            files = list(self.output_dir.glob("*.json"))
+             # Fallback: look for flat benchmark JSON files
+            files = list(self.config.benchmarks_dir.glob("*.json"))
             if not files:
                 return None
             sorted_files = sorted(files, key=lambda f: f.stem, reverse=True)
@@ -195,8 +195,8 @@ class BenchmarkManager:
     def get_all_runs(self):
         runs = []
         try:
-            # New structure: directories containing benchmark.json
-            for run_dir in self.output_dir.iterdir():
+             # New structure: directories containing benchmark.json
+            for run_dir in self.config.benchmarks_dir.iterdir():
                 if run_dir.is_dir() and not run_dir.name.startswith('.'):
                     benchmark_file = run_dir / "benchmark.json"
                     if benchmark_file.exists():
