@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 # Import Config from src.config
 from src.config import Config
@@ -91,8 +91,7 @@ class Leaderboard(BaseModel):
     rankings: List[LeaderboardEntry]
     meta: Dict = Field(default_factory=dict)
     
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 class RankingSystem:
     def __init__(self, config):
         self.config = config

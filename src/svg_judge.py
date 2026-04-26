@@ -87,6 +87,13 @@ SVG Content:
 Respond with ONLY the JSON object."""
 
         try:
+            # Call the model to clear context
+            response = await model_client.generate(
+                model=model_name,
+                prompt='/clear',
+                stream=False
+            )
+
             response = await model_client.generate(
                 model=model_name,
                 prompt=prompt,
@@ -183,6 +190,13 @@ Respond with a JSON object:
 Respond with ONLY the JSON."""
 
         try:
+            # Call the model to clear context
+            response = await judge_model.generate(
+                model="llama3",
+                prompt='/clear',
+                stream=False
+            )
+
             response = await judge_model.generate(
                 model="llama3",
                 prompt=prompt,

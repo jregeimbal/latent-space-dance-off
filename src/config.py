@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 from typing import List
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class Config(BaseModel):
@@ -61,9 +61,7 @@ class Config(BaseModel):
         description="Comma-separated list of judging criteria"
     )
 
-    class Config:
-        """Pydantic configuration."""
-        case_sensitive = False
+    model_config = ConfigDict()
 
     @field_validator('MODEL_LIST')
     @classmethod

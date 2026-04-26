@@ -29,17 +29,17 @@ class SVGResult(BaseModel):
     svg_code: str
     """The generated SVG code."""
 
-    svg_path: Optional[str] = Field(None, description="Path where SVG was saved")
+    svg_path: Optional[str] = None
 
-    duration_ms: float = Field(0, description="Duration in milliseconds")
+    duration_ms: float = 0.0
 
-    tokens_used: Optional[int] = Field(None, description="Number of tokens used")
+    tokens_used: Optional[int] = None
 
-    status: str = Field("success", description="Generation status (success/failed)")
+    status: str = "success"
 
-    error_message: Optional[str] = Field(None, description="Error message if generation failed")
+    error_message: Optional[str] = None
 
-    generation_prompt: Optional[str] = Field(None, description="The prompt used to generate this SVG")
+    generation_prompt: Optional[str] = None
 
 
 class SVGGenerator:
@@ -188,6 +188,13 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
         try:
             # Generate prompt
             prompt = self._get_svg_prompt(theme, model_name)
+
+            # Call the model to clear context
+            response = await model_client.generate(
+                model=model_name,
+                prompt='/clear',
+                stream=False
+            )
 
             # Call the model
             response = await model_client.generate(

@@ -4,13 +4,15 @@ Benchmark recorder module for latent-space-dance-off.
 
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SVGResult(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     model_name: str
     theme: str
     svg_code: str
@@ -19,8 +21,10 @@ class SVGResult(BaseModel):
     tokens_used: Optional[int] = None
     status: str = "success"
     error_message: Optional[str] = None
+    generation_prompt: Optional[str] = None
 
-    generation_prompt: Optional[str] = Field(None, description="The prompt used to generate this SVG")
+    # Dynamically set by BenchmarkManager.record_generation()
+    benchmark_record: Optional["BenchmarkRecord"] = Field(default=None, exclude=True)
 
 
 class BenchmarkRecord(BaseModel):
@@ -55,7 +59,7 @@ class BenchmarkManager:
         self._current_run_dir = None
     
     def generate_run_id(self):
-        return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+        return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")
     
     def _ensure_run_dir(self, run_id: str) -> Path:
         """Create and return the run directory: output/{run_id}/"""
