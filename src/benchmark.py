@@ -115,8 +115,9 @@ class BenchmarkManager:
                  "reason": j.reason,
                  "rank": j.rank,
                  "winner_svg": j.winner_svg,
-                 "criteria_used": getattr(j, 'criteria_used', ["creativity", "aesthetics", "complexity"])
-            })
+                 "criteria_used": getattr(j, 'criteria_used', ["creativity", "aesthetics", "complexity"]),
+                 "judge_prompt": getattr(j, 'judge_prompt', None)
+              })
         json_data["judgments"] = judgments_list
 
         with open(filepath, "w", encoding="utf-8") as f:
@@ -164,8 +165,9 @@ class BenchmarkManager:
                 reason=j.get("reason"),
                 rank=j.get("rank"),
                 winner_svg=j.get("winner_svg"),
-                criteria_used=j.get("criteria_used", ["creativity", "aesthetics", "complexity"])
-            ))
+                criteria_used=j.get("criteria_used", ["creativity", "aesthetics", "complexity"]),
+                judge_prompt=j.get("judge_prompt")
+             ))
         return RunData(run_id=data["run_id"], timestamp=data["timestamp"],
                       svgs=svgs, benchmarks=benchmarks,
                       model_list=data["model_list"], themes=data["themes"])

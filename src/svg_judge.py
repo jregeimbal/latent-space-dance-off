@@ -30,6 +30,7 @@ class Judgment(BaseModel):
     rank: Optional[int] = Field(None, description="Ranking among compared SVGs")
     winner_svg: Optional[str] = Field(None, description="Winner in head-to-head")
     criteria_used: List[str] = Field(default_factory=lambda: ["creativity", "aesthetics", "complexity"], description="List of criteria used for this judgment")
+    judge_prompt: Optional[str] = Field(None, description="The full prompt sent to the judge model")
 
 
 class Comparison(BaseModel):
@@ -108,16 +109,17 @@ Respond with ONLY the JSON object."""
             avg_total = total / count if count > 0 else 5.0
 
             return Judgment(
-                svg_id=svg_id,
-                svg_model_name=model_name,
-                judged_by=judge_name,
-                scores=scores,
-                total_score=avg_total,
-                reason=data.get('reason', 'No reasoning provided'),
-                rank=None,
-                winner_svg=None,
-                criteria_used=self.config.judging_criteria
-             )
+                 svg_id=svg_id,
+                 svg_model_name=model_name,
+                 judged_by=judge_name,
+                 scores=scores,
+                 total_score=avg_total,
+                 reason=data.get('reason', 'No reasoning provided'),
+                 rank=None,
+                 winner_svg=None,
+                 criteria_used=self.config.judging_criteria,
+                 judge_prompt=prompt
+               )
         except Exception as e:
             console.print(f"[red]Error during judging SVG {svg_id} with model {model_name}: {str(e)}[/red]")
             scores: Dict[str, Optional[float]] = {criterion: 5.0 for criterion in self.config.judging_criteria}
@@ -130,8 +132,9 @@ Respond with ONLY the JSON object."""
                 reason=f"Error during judging: {str(e)}",
                 rank=None,
                 winner_svg=None,
-                criteria_used=self.config.judging_criteria
-                  )
+                criteria_used=self.config.judging_criteria,
+                judge_prompt=prompt
+                   )
 
     def _calculate_total(self, creativity: float, aesthetics: float, complexity: float) -> float:
         return (creativity + aesthetics + complexity) / 3

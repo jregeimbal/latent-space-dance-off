@@ -245,15 +245,16 @@ async def _run_impl(
               }
             
             run_data_dict["judgments"].append({
-                  "svg_id": j.svg_id,
-                  "judged_by": j.judged_by,
-                  "scores": scores_dict,
-                  "total_score": j.total_score,
-                  "reason": j.reason,
-                  "rank": j.rank,
-                  "winner_svg": j.winner_svg,
-                  "criteria_used": getattr(j, 'criteria_used', config.judging_criteria)
-             })
+                   "svg_id": j.svg_id,
+                   "judged_by": j.judged_by,
+                   "scores": scores_dict,
+                   "total_score": j.total_score,
+                   "reason": j.reason,
+                   "rank": j.rank,
+                   "winner_svg": j.winner_svg,
+                   "criteria_used": getattr(j, 'criteria_used', config.judging_criteria),
+                   "judge_prompt": getattr(j, 'judge_prompt', None)
+              })
         generate_benchmark_html(run_data_dict, html_path)
         console.print(f"[yellow]HTML report saved to: {html_path}[/yellow]")
         
