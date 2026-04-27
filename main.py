@@ -22,7 +22,7 @@ from src.model_manager import ModelManager
 from src.svg_generator import SVGGenerator
 from src.svg_judge import SVGJudge
 from src.ranking import RankingSystem, Leaderboard
-from src.benchmark import BenchmarkManager, RunData, SVGResult
+from src.benchmark import BenchmarkManager, BenchmarkRecord, RunData, SVGResult
 from src.html_generator import generate_benchmark_html
 from src.utils import format_duration
 
@@ -191,10 +191,16 @@ async def _run_impl(
             error_message=r.error_message,
             generation_prompt=r.generation_prompt
             ) for r in svg_results],
-        benchmarks=[],
+        benchmarks=[BenchmarkRecord(
+            run_id=run_id,
+            model_name=r.model_name,
+            theme=r.theme,
+            duration_ms=r.duration_ms,
+            tokens=r.tokens_used
+        ) for r in svg_results],
         model_list=list(model_clients.keys()),
         themes=theme_list
-       )
+        )
 
     if svg_results:
         console.print(f"\n[cyan]Starting judgment phase with {num_judges} judge models...[/cyan]\n")

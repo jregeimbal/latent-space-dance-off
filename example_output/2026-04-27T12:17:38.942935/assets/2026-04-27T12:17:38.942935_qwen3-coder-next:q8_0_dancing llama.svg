@@ -1,0 +1,121 @@
+<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Animation for Head Bopping -->
+    <animateTransform id="headBop" attributeName="transform" attributeType="XML" type="translate" 
+                      values="0 0; 0 5; 0 0" dur="0.4s" repeatCount="indefinite" />
+
+    <!-- Animation for Arm Waving -->
+    <animateTransform id="armWave" attributeName="transform" attributeType="XML" type="rotate" 
+                      values="-10 280 220; 20 280 220; -10 280 220" dur="0.6s" repeatCount="indefinite" />
+                      
+    <!-- Animation for Body Bobbing -->
+    <animateTransform id="bodyBop" attributeName="transform" attributeType="XML" type="translate" 
+                      values="0 0; 0 8; 0 0" dur="0.3s" repeatCount="indefinite" />
+
+    <!-- Pattern for Saddle -->
+    <pattern id="saddlePattern" patternUnits="userSpaceOnUse" width="10" height="10">
+      <circle cx="5" cy="5" r="2" fill="#D00000" opacity="0.5"/>
+    </pattern>
+  </defs>
+
+  <!-- Background (Rect) -->
+  <rect width="400" height="400" fill="#E0F7FA" />
+  
+  <!-- Floor -->
+  <rect x="0" y="350" width="400" height="50" fill="#A5D6A7" />
+
+  <!-- Disco Ball (Circle & Polygons) -->
+  <g transform="translate(200, 60)">
+    <circle r="30" fill="#FFEB3B" />
+    <polygon points="200,30 210,50 190,50" fill="#FF9800" />
+    <polygon points="200,90 215,70 185,70" fill="#FF9800" />
+    <line x1="200" y1="30" x2="200" y2="0" stroke="#FFEB3B" stroke-width="2" />
+    <circle r="3" fill="#FFF" opacity="0.8">
+      <animate attributeName="opacity" values="0.5;1;0.5" dur="0.5s" repeatCount="indefinite" />
+    </circle>
+  </g>
+
+  <!-- Llama Group (Bobbing Body) -->
+  <g transform="translate(0,0)">
+    <animateTransform attributeName="transform" attributeType="XML" type="translate" 
+                      values="0 0; 0 -8; 0 0" dur="0.3s" repeatCount="indefinite" />
+
+    <!-- Back Legs (Polyline) -->
+    <polyline points="150,300 150,360" stroke="#E0E0E0" stroke-width="12" stroke-linecap="round" />
+    <polyline points="250,300 250,360" stroke="#E0E0E0" stroke-width="12" stroke-linecap="round" />
+    
+    <!-- Hooves -->
+    <rect x="140" y="360" width="20" height="15" fill="#3E2723" rx="2" />
+    <rect x="240" y="360" width="20" height="15" fill="#3E2723" rx="2" />
+
+    <!-- Body (Ellipse) -->
+    <ellipse cx="200" cy="260" rx="60" ry="45" fill="#F5F5F5" />
+
+    <!-- Saddle (Rect & Ellipse) -->
+    <rect x="165" y="245" width="70" height="20" fill="#D32F2F" rx="5" />
+    <ellipse cx="200" cy="240" rx="50" ry="5" fill="#B71C1C" />
+    <rect x="188" y="243" width="24" height="24" fill="url(#saddlePattern)" stroke="#B71C1C" stroke-width="1" />
+
+    <!-- Neck (Polygon) -->
+    <polygon points="180,230 220,230 210,160 190,160" fill="#F5F5F5" />
+    <polygon points="185,220 215,220 212,170 188,170" fill="#EEEEEE" />
+
+    <!-- Head Group (Transform animated) -->
+    <g transform="translate(0,0)" animateTransform="headBop">
+        <!-- Head Shape (Path) -->
+        <path d="M 185 160 Q 185 120 215 120 Q 235 120 235 150 Q 235 175 215 175 Q 185 175 185 160 Z" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="2"/>
+        
+        <!-- Snout (Ellipse) -->
+        <ellipse cx="235" cy="145" rx="10" ry="8" fill="#F5F5F5" />
+        <ellipse cx="238" cy="145" rx="2" ry="2" fill="#3E2723" /> <!-- Nostril -->
+        
+        <!-- Ears (Polygon) -->
+        <polygon points="190,125 195,90 205,115" fill="#F5F5F5" stroke="#E0E0E0" stroke-width="2" />
+        <polygon points="225,115 235,90 240,125" fill="#F5F5F5" stroke="#E0E0E0" stroke-width="2" />
+
+        <!-- Eyes (Circle) -->
+        <circle cx="195" cy="145" r="3" fill="#000" />
+        <circle cx="225" cy="145" r="3" fill="#000" />
+        <circle cx="196" cy="144" r="1" fill="#FFF" />
+        <circle cx="226" cy="144" r="1" fill="#FFF" />
+        
+        <!-- Llama Scarf (Path) -->
+        <path d="M 190 165 Q 200 180 215 165" stroke="#311B92" stroke-width="4" fill="none" />
+        <path d="M 200 180 L 200 200 L 210 200 L 210 185" fill="#311B92" />
+    </g>
+
+    <!-- Front Legs (Polyline) -->
+    <polyline points="160,300 160,365" stroke="#E0E0E0" stroke-width="12" stroke-linecap="round">
+        <animateTransform attributeName="transform" attributeType="XML" type="rotate" 
+                          values="0 160 300; 25 160 300; 0 160 300" dur="0.3s" repeatCount="indefinite" />
+    </polyline>
+    <polyline points="240,300 240,365" stroke="#E0E0E0" stroke-width="12" stroke-linecap="round">
+        <animateTransform attributeName="transform" attributeType="XML" type="rotate" 
+                          values="0 240 300; -25 240 300; 0 240 300" dur="0.3s" repeatCount="indefinite" />
+    </polyline>
+    
+    <!-- Hooves (Rect) -->
+    <rect x="150" y="365" width="20" height="15" fill="#3E2723" rx="2" />
+    <rect x="230" y="365" width="20" height="15" fill="#3E2723" rx="2" />
+
+    <!-- Arms/Hands (Ellipse & Polygon) -->
+    <!-- Right Arm -->
+    <ellipse cx="265" cy="255" rx="8" ry="25" fill="#F5F5F5" transform="rotate(-10 280 220)">
+       <animateTransform attributeName="transform" attributeType="XML" type="rotate" 
+                      values="-10 280 220; 40 280 220; -10 280 220" dur="0.6s" repeatCount="indefinite" />
+    </ellipse>
+    <circle cx="280" cy="275" r="8" fill="#FFFFFF" stroke="#E0E0E0" /> <!-- Hand -->
+
+    <!-- Left Arm -->
+    <ellipse cx="135" cy="255" rx="8" ry="25" fill="#F5F5F5" transform="rotate(10 120 220)" />
+    <circle cx="120" cy="275" r="8" fill="#FFFFFF" stroke="#E0E0E0" /> <!-- Hand -->
+    
+    <!-- Disco Paws (Colored Hands) -->
+    <circle cx="280" cy="275" r="5" fill="#E91E63" />
+    <circle cx="120" cy="275" r="5" fill="#2196F3" />
+
+  </g>
+
+  <!-- Shadow (Circle) -->
+  <ellipse cx="200" cy="380" rx="60" ry="10" fill="#000" opacity="0.15" />
+</svg>

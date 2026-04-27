@@ -1,0 +1,67 @@
+<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="400" fill="#E0F7FA" />
+  
+  <!-- Disco Floor -->
+  <rect x="0" y="300" width="400" height="100" fill="#263238" />
+  
+  <!-- Llama Body (Main Fluff) -->
+  <path d="M140 280 Q 140 180 200 180 Q 260 180 260 280 Q 260 320 200 320 Q 140 320 140 280 Z" fill="white" stroke="#ddd" stroke-width="2"/>
+  
+  <!-- Necks (The Curve) -->
+  <path d="M200 200 Q 200 150 160 130" fill="none" stroke="white" stroke-width="45" stroke-linecap="round" />
+  <path d="M200 200 Q 200 150 160 130" fill="none" stroke="#eee" stroke-width="40" stroke-linecap="round" />
+
+  <!-- Head -->
+  <circle cx="160" cy="120" r="35" fill="white" />
+  
+  <!-- Ears (Polygons) -->
+  <polygon points="145,95 155,115 135,100" fill="white" stroke="#ddd" />
+  <polygon points="175,95 165,115 185,100" fill="white" stroke="#ddd" />
+  
+  <!-- Face Details -->
+  <circle cx="150" cy="115" r="5" fill="black" /> <!-- Left Eye -->
+  <circle cx="170" cy="115" r="5" fill="black" /> <!-- Right Eye -->
+  
+  <!-- Sunglasses (Rects and Lines) -->
+  <rect x="145" y="110" width="15" height="10" rx="2" fill="black" stroke="#ffd700" stroke-width="2" /> <!-- Left Lens -->
+  <rect x="160" y="110" width="15" height="10" rx="2" fill="black" stroke="#ffd700" stroke-width="2" /> <!-- Right Lens -->
+  <line x1="160" y1="115" x2="160" y2="115" stroke="#ffd700" stroke-width="2" /> <!-- Bridge -->
+  <line x1="160" y1="115" x2="145" y2="105" stroke="#ffd700" stroke-width="2" /> <!-- Left Arm of glasses -->
+  <line x1="160" y1="115" x2="175" y2="105" stroke="#ffd700" stroke-width="2" /> <!-- Right Arm of glasses -->
+
+  <!-- Snout -->
+  <ellipse cx="160" cy="135" rx="10" ry="8" fill="#eee" />
+  <circle cx="156" cy="132" r="2" fill="black" />
+  <circle cx="164" cy="132" r="2" fill="black" />
+  <circle cx="160" cy="140" r="3" fill="pink" />
+
+  <!-- Arms (Lines) -->
+  <line x1="200" y1="230" x2="240" y2="200" stroke="white" stroke-width="12" stroke-linecap="round" /> <!-- Right Arm Up -->
+  <line x1="200" y1="230" x2="160" y2="260" stroke="white" stroke-width="12" stroke-linecap="round" /> <!-- Left Arm Down -->
+
+  <!-- Legs (Lines) -->
+  <line x1="170" y1="280" x2="160" y2="330" stroke="white" stroke-width="12" stroke-linecap="round" /> <!-- Leg 1 -->
+  <line x1="200" y1="280" x2="210" y2="340" stroke="white" stroke-width="12" stroke-linecap="round" /> <!-- Leg 2 -->
+  <line x1="230" y1="280" x2="240" y2="330" stroke="white" stroke-width="12" stroke-linecap="round" /> <!-- Leg 3 -->
+  
+  <!-- Hooves (Circles) -->
+  <circle cx="160" cy="330" r="6" fill="#8D6E63" />
+  <circle cx="210" cy="340" r="6" fill="#8D6E63" />
+  <circle cx="240" cy="330" r="6" fill="#8D6E63" />
+
+  <!-- Tail (Path) -->
+  <path d="M260 250 Q 280 240 290 260" fill="none" stroke="white" stroke-width="10" stroke-linecap="round" />
+  <circle cx="290" cy="260" r="5" fill="#FF69B4" /> <!-- Pom-pom tail -->
+
+  <!-- Fur Texture (Polyline) -->
+  <polyline points="140,280 135,270 145,260 130,250 145,240 135,230 150,220 140,210" fill="none" stroke="#eee" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Disco Ball (Circle) -->
+  <circle cx="320" cy="60" r="30" fill="#C0C0C0" stroke="#FFF" stroke-width="2" />
+  <circle cx="320" cy="60" r="28" fill="none" stroke="#FFD700" stroke-width="2" stroke-dasharray="5,5" />
+  
+  <!-- Spotlight (Ellipse) -->
+  <ellipse cx="320" cy="150" rx="40" ry="100" fill="white" opacity="0.2" transform="rotate(-10 320 150)" />
+
+</svg>

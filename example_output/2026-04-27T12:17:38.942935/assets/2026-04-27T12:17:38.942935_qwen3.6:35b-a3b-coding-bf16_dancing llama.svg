@@ -1,0 +1,238 @@
+<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Disco Ball Gradient -->
+    <radialGradient id="discoGrad" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#a0a0a0"/>
+    </radialGradient>
+    
+    <!-- Disco Light Beam -->
+    <linearGradient id="beamGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff00ff" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#00ffff" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Llama Body Gradient -->
+    <linearGradient id="llamaBodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF5E6"/>
+      <stop offset="100%" stop-color="#E8D0B5"/>
+    </linearGradient>
+
+    <!-- CSS Animations -->
+    <style>
+      .dance-floor {
+        animation: floorLights 2s infinite alternate;
+      }
+      @keyframes floorLights {
+        0% { fill: #ff007f; }
+        50% { fill: #007fff; }
+        100% { fill: #7f00ff; }
+      }
+
+      .llama-body {
+        animation: bodyBob 0.6s infinite ease-in-out alternate;
+        transform-origin: 200px 250px;
+      }
+      @keyframes bodyBob {
+        0% { transform: translateY(0px) rotate(0deg); }
+        100% { transform: translateY(-15px) rotate(2deg); }
+      }
+
+      .llama-head {
+        animation: headNod 0.6s infinite ease-in-out alternate;
+        transform-origin: 200px 100px;
+      }
+      @keyframes headNod {
+        0% { transform: rotate(0deg) translateY(0px); }
+        100% { transform: rotate(-5deg) translateY(-5px); }
+      }
+
+      .leg-left {
+        animation: legKickLeft 0.6s infinite ease-in-out alternate;
+        transform-origin: 170px 260px;
+      }
+      @keyframes legKickLeft {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(-20deg); }
+      }
+
+      .leg-right {
+        animation: legKickRight 0.6s infinite ease-in-out alternate;
+        transform-origin: 230px 260px;
+      }
+      @keyframes legKickRight {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(20deg); }
+      }
+
+      .arm-left {
+        animation: armWaveLeft 0.6s infinite ease-in-out alternate;
+        transform-origin: 160px 160px;
+      }
+      @keyframes armWaveLeft {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(-40deg); }
+      }
+
+      .arm-right {
+        animation: armWaveRight 0.6s infinite ease-in-out alternate;
+        transform-origin: 240px 160px;
+      }
+      @keyframes armWaveRight {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(40deg); }
+      }
+
+      .tail {
+        animation: tailWag 0.3s infinite ease-in-out alternate;
+        transform-origin: 240px 220px;
+      }
+      @keyframes tailWag {
+        0% { transform: rotate(-10deg); }
+        100% { transform: rotate(10deg); }
+      }
+
+      .disco-ball {
+        animation: spin 4s infinite linear;
+        transform-origin: 200px 0px;
+      }
+      @keyframes spin {
+        0% { transform: rotateY(0deg); }
+        100% { transform: rotateY(360deg); }
+      }
+
+      .note1 { animation: floatUp 1.5s infinite linear; }
+      .note2 { animation: floatUp 1.5s infinite linear 0.5s; }
+      .note3 { animation: floatUp 1.5s infinite linear 1s; }
+      @keyframes floatUp {
+        0% { transform: translateY(0px) rotate(0deg); opacity: 0; }
+        20% { opacity: 1; }
+        80% { opacity: 1; }
+        100% { transform: translateY(-40px) rotate(15deg); opacity: 0; }
+      }
+
+      .beam {
+        animation: beamRotate 4s infinite alternate ease-in-out;
+        transform-origin: 200px 20px;
+      }
+      @keyframes beamRotate {
+        0% { transform: rotate(-15deg); }
+        100% { transform: rotate(15deg); }
+      }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="400" fill="#1a0b2e" />
+
+  <!-- Disco Light Beams -->
+  <polygon points="200,20 0,400 100,400" fill="url(#beamGrad)" class="beam" style="animation-delay: 0s;" />
+  <polygon points="200,20 300,400 400,400" fill="url(#beamGrad)" class="beam" style="animation-delay: 1s;" />
+
+  <!-- Disco Ball -->
+  <line x1="200" y1="0" x2="200" y2="20" stroke="#888" stroke-width="2" />
+  <circle cx="200" cy="35" r="15" fill="url(#discoGrad)" class="disco-ball" />
+  <!-- Disco Ball Grid Lines -->
+  <ellipse cx="200" cy="35" rx="15" ry="5" fill="none" stroke="#fff" stroke-width="1" opacity="0.5" />
+  <ellipse cx="200" cy="35" rx="5" ry="15" fill="none" stroke="#fff" stroke-width="1" opacity="0.5" />
+  <line x1="185" y1="35" x2="215" y2="35" stroke="#fff" stroke-width="1" opacity="0.5" />
+  <line x1="200" y1="20" x2="200" y2="50" stroke="#fff" stroke-width="1" opacity="0.5" />
+
+  <!-- Dance Floor -->
+  <rect x="20" y="320" width="360" height="60" rx="10" class="dance-floor" />
+  <line x1="20" y1="335" x2="380" y2="335" stroke="#ffffff" stroke-width="2" opacity="0.5" />
+  <line x1="20" y1="350" x2="380" y2="350" stroke="#ffffff" stroke-width="2" opacity="0.5" />
+  <line x1="20" y1="365" x2="380" y2="365" stroke="#ffffff" stroke-width="2" opacity="0.5" />
+
+  <!-- Floor Shadow -->
+  <ellipse cx="200" cy="320" rx="60" ry="10" fill="#000000" opacity="0.4" />
+
+  <!-- Llama Group -->
+  <g class="llama-body">
+    <!-- Back Legs -->
+    <g class="leg-right">
+      <rect x="220" y="250" width="16" height="60" rx="8" fill="#E8D0B5" />
+      <rect x="218" y="305" width="20" height="10" rx="4" fill="#333333" />
+    </g>
+    
+    <!-- Tail -->
+    <path d="M 240 220 Q 270 210 280 230 Q 290 250 270 250 Q 260 250 260 240 Q 260 230 240 230 Z" fill="#FFF5E6" class="tail" />
+
+    <!-- Body -->
+    <ellipse cx="200" cy="230" rx="65" ry="50" fill="url(#llamaBodyGrad)" />
+    
+    <!-- Sweater -->
+    <path d="M 145 200 Q 200 220 255 200 L 245 260 Q 200 280 155 260 Z" fill="#FF007F" />
+    <path d="M 150 220 L 250 220" stroke="#00FFFF" stroke-width="4" stroke-dasharray="8,4" />
+    <path d="M 155 240 L 245 240" stroke="#00FFFF" stroke-width="4" stroke-dasharray="8,4" />
+    <polygon points="200,210 215,230 185,230" fill="#FFD700" />
+
+    <!-- Front Legs -->
+    <g class="leg-left">
+      <rect x="160" y="250" width="16" height="60" rx="8" fill="#FFF5E6" />
+      <rect x="158" y="305" width="20" height="10" rx="4" fill="#333333" />
+    </g>
+
+    <!-- Left Arm -->
+    <g class="arm-left">
+      <path d="M 160 160 Q 130 170 120 140" fill="none" stroke="#FFF5E6" stroke-width="14" stroke-linecap="round" />
+      <circle cx="120" cy="140" r="7" fill="#333333" />
+    </g>
+
+    <!-- Right Arm -->
+    <g class="arm-right">
+      <path d="M 240 160 Q 270 170 280 140" fill="none" stroke="#FFF5E6" stroke-width="14" stroke-linecap="round" />
+      <circle cx="280" cy="140" r="7" fill="#333333" />
+    </g>
+
+    <!-- Neck -->
+    <path d="M 175 210 Q 160 130 180 100 L 220 100 Q 240 130 225 210 Z" fill="url(#llamaBodyGrad)" />
+
+    <!-- Head -->
+    <g class="llama-head">
+      <!-- Ears -->
+      <polygon points="175,95 160,60 185,85" fill="#FFF5E6" />
+      <polygon points="225,95 240,60 215,85" fill="#FFF5E6" />
+      <polygon points="175,90 165,68 182,85" fill="#FFB6C1" />
+      <polygon points="225,90 235,68 218,85" fill="#FFB6C1" />
+
+      <!-- Head Base -->
+      <ellipse cx="200" cy="95" rx="35" ry="28" fill="url(#llamaBodyGrad)" />
+      
+      <!-- Snout -->
+      <ellipse cx="200" cy="110" rx="22" ry="16" fill="#FFF5E6" />
+      <ellipse cx="200" cy="108" rx="6" ry="4" fill="#333333" />
+      <path d="M 195 115 Q 200 120 205 115" fill="none" stroke="#333333" stroke-width="2" stroke-linecap="round" />
+
+      <!-- Hair/Bangs -->
+      <path d="M 170 80 Q 180 50 200 60 Q 220 50 230 80 Q 210 70 200 75 Q 190 70 170 80 Z" fill="#FFD700" />
+
+      <!-- Sunglasses -->
+      <rect x="175" y="85" width="22" height="14" rx="4" fill="#111111" />
+      <rect x="203" y="85" width="22" height="14" rx="4" fill="#111111" />
+      <line x1="197" y1="92" x2="203" y2="92" stroke="#111111" stroke-width="3" />
+      <line x1="165" y1="88" x2="175" y2="90" stroke="#111111" stroke-width="3" />
+      <line x1="225" y1="90" x2="235" y2="88" stroke="#111111" stroke-width="3" />
+      <!-- Sunglasses Reflection -->
+      <line x1="180" y1="88" x2="190" y2="95" stroke="#ffffff" stroke-width="2" opacity="0.6" />
+      <line x1="208" y1="88" x2="218" y2="95" stroke="#ffffff" stroke-width="2" opacity="0.6" />
+    </g>
+  </g>
+
+  <!-- Musical Notes -->
+  <g class="note1">
+    <circle cx="80" cy="280" r="5" fill="#00FFFF" />
+    <line x1="85" y1="280" x2="85" y2="260" stroke="#00FFFF" stroke-width="2" />
+    <polygon points="85,260 95,265 85,270" fill="#00FFFF" />
+  </g>
+  <g class="note2">
+    <circle cx="110" cy="250" r="6" fill="#FF00FF" />
+    <line x1="116" y1="250" x2="116" y2="225" stroke="#FF00FF" stroke-width="2" />
+    <polygon points="116,225 128,230 116,235" fill="#FF00FF" />
+  </g>
+  <g class="note3">
+    <circle cx="320" cy="270" r="5" fill="#FFD700" />
+    <line x1="325" y1="270" x2="325" y2="250" stroke="#FFD700" stroke-width="2" />
+    <polygon points="325,250 335,255 325,260" fill="#FFD700" />
+  </g>
+</svg>

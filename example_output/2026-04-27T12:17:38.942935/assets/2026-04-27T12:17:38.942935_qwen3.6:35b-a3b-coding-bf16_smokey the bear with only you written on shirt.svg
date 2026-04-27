@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <!-- Background Sky -->
+  <rect x="0" y="0" width="500" height="500" fill="#87CEEB" />
+  
+  <!-- Sun -->
+  <circle cx="420" cy="80" r="40" fill="#FFD700" />
+
+  <!-- Background Hills -->
+  <path d="M 0 300 Q 150 200 300 300 T 500 250 L 500 500 L 0 500 Z" fill="#228B22" />
+  <path d="M 0 350 Q 200 280 500 350 L 500 500 L 0 500 Z" fill="#006400" />
+
+  <!-- Background Trees -->
+  <polygon points="50,300 20,300 35,200" fill="#004d00" />
+  <polygon points="50,220 25,220 35,150" fill="#004d00" />
+  <polygon points="50,160 30,160 35,100" fill="#004d00" />
+  
+  <polygon points="450,320 420,320 435,220" fill="#004d00" />
+  <polygon points="450,240 425,240 435,170" fill="#004d00" />
+  <polygon points="450,180 430,180 435,120" fill="#004d00" />
+
+  <!-- Bear Left Arm (Behind Body) -->
+  <path d="M 160 280 C 100 320, 80 400, 110 430 C 130 440, 150 420, 140 380 C 130 340, 150 300, 160 280 Z" fill="#5C4033" />
+
+  <!-- Bear Right Arm (Behind Axe) -->
+  <path d="M 340 280 C 400 320, 420 400, 390 430 C 370 440, 350 420, 360 380 C 370 340, 350 300, 340 280 Z" fill="#5C4033" />
+
+  <!-- Bear Body -->
+  <path d="M 160 280 C 140 350, 150 450, 250 450 C 350 450, 360 350, 340 280 Z" fill="#5C4033" />
+
+  <!-- Teal T-Shirt -->
+  <path d="M 160 280 C 140 310, 140 360, 160 420 C 200 440, 300 440, 340 420 C 360 360, 360 310, 340 280 C 320 300, 280 310, 250 310 C 220 310, 180 300, 160 280 Z" fill="#008080" />
+  
+  <!-- T-Shirt Folds/Wrinkles -->
+  <path d="M 180 320 Q 190 380 180 430" fill="none" stroke="#006666" stroke-width="3" stroke-linecap="round" />
+  <path d="M 320 320 Q 310 380 320 430" fill="none" stroke="#006666" stroke-width="3" stroke-linecap="round" />
+  <path d="M 250 310 Q 250 350 250 440" fill="none" stroke="#006666" stroke-width="3" stroke-linecap="round" />
+
+  <!-- Text "Only You" on Shirt -->
+  <g fill="#FFD700" stroke="#000080" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+    <!-- "Only" -->
+    <!-- O -->
+    <path d="M 180 320 C 180 305, 200 305, 200 320 C 200 335, 180 335, 180 320 Z" />
+    <!-- n -->
+    <path d="M 205 335 L 205 320 C 205 310, 220 310, 220 320 L 220 335" />
+    <!-- l -->
+    <path d="M 225 310 L 225 335" />
+    <!-- y -->
+    <path d="M 230 320 C 230 310, 245 310, 245 320 L 245 335 C 245 345, 230 345, 230 335" />
+    
+    <!-- "You" -->
+    <!-- Y -->
+    <path d="M 260 320 L 265 325 L 265 335 L 275 335 L 275 325 L 280 320 L 270 320 L 265 310 L 260 320 Z" />
+    <!-- o -->
+    <path d="M 285 327 C 285 317, 305 317, 305 327 C 305 337, 285 337, 285 327 Z" />
+    <!-- u -->
+    <path d="M 310 320 L 310 330 C 310 340, 330 340, 330 330 L 330 320 L 330 325 C 330 330, 310 330, 310 325 Z" />
+  </g>
+
+  <!-- Bear Head -->
+  <ellipse cx="250" cy="200" rx="80" ry="90" fill="#5C4033" />
+  
+  <!-- Bear Ears -->
+  <circle cx="170" cy="130" r="25" fill="#5C4033" />
+  <circle cx="170" cy="130" r="12" fill="#D2B48C" />
+  <circle cx="330" cy="130" r="25" fill="#5C4033" />
+  <circle cx="330" cy="130" r="12" fill="#D2B48C" />
+
+  <!-- Bear Snout -->
+  <ellipse cx="250" cy="230" rx="45" ry="30" fill="#D2B48C" />
+  
+  <!-- Mouth -->
+  <path d="M 250 245 L 250 255" fill="none" stroke="#3E2723" stroke-width="3" stroke-linecap="round" />
+  <path d="M 235 255 Q 250 265 265 255" fill="none" stroke="#3E2723" stroke-width="3" stroke-linecap="round" />
+
+  <!-- Nose -->
+  <ellipse cx="250" cy="220" rx="18" ry="12" fill="#000000" />
+  <ellipse cx="245" cy="216" rx="5" ry="3" fill="#FFFFFF" />
+
+  <!-- Eyes -->
+  <circle cx="215" cy="180" r="10" fill="#FFFFFF" />
+  <circle cx="215" cy="180" r="4" fill="#000000" />
+  <circle cx="213" cy="178" r="1.5" fill="#FFFFFF" />
+
+  <circle cx="285" cy="180" r="10" fill="#FFFFFF" />
+  <circle cx="285" cy="180" r="4" fill="#000000" />
+  <circle cx="283" cy="178" r="1.5" fill="#FFFFFF" />
+
+  <!-- Eyebrows -->
+  <path d="M 200 160 Q 215 150 230 165" fill="none" stroke="#3E2723" stroke-width="4" stroke-linecap="round" />
+  <path d="M 300 160 Q 285 150 270 165" fill="none" stroke="#3E2723" stroke-width="4" stroke-linecap="round" />
+
+  <!-- Smokey's Hat -->
+  <path d="M 160 150 C 160 70, 340 70, 340 150 Z" fill="#8B4513" />
+  <path d="M 130 150 C 130 170, 370 170, 370 150 Z" fill="#5C4033" />
+  <path d="M 165 110 C 220 95, 280 95, 335 110 L 330 120 C 280 105, 220 105, 170 120 Z" fill="#FFD700" />
+  
+  <!-- Text "SMOKEY" on Hat -->
+  <g fill="#000000" stroke="#000000" stroke-width="1" stroke-linejoin="round" stroke-linecap="round">
+    <!-- S -->
+    <path d="M 235 108 C 235 103, 245 103, 245 108 C 245 113, 235 113, 235 118 C 235 123, 245 123, 245 118" />
+    <!-- M -->
+    <path d="M 250 118 L 250 105 L 255 110 L 260 105 L 260 118" />
+    <!-- O -->
+    <path d="M 265 118 C 265 105, 275 105, 275 118 C 275 131, 265 131, 265 118 Z" />
+    <!-- K -->
+    <path d="M 280 118 L 280 105 L 285 118 L 285 105" />
+    <!-- E -->
+    <path d="M 295 105 L 285 105 L 285 118 L 295 118 M 285 111.5 L 292 111.5" />
+    <!-- Y -->
+    <path d="M 300 105 L 305 111.5 L 310 105 L 315 105 L 307.5 118 L 302.5 118 Z" />
+  </g>
+
+  <!-- Axe (Held in Right Paw) -->
+  <!-- Handle -->
+  <line x1="380" y1="250" x2="460" y2="450" stroke="#8B4513" stroke-width="12" stroke-linecap="round" />
+  <!-- Axe Head Base -->
+  <polygon points="380,250 350,220 320,250 350,280" fill="#708090" />
+  <!-- Axe Head Blade -->
+  <path d="M 350 220 C 320 220, 300 240, 300 250 C 300 260, 320 280, 350 280 Z" fill="#A9A9A9" />
+  <!-- Axe Head Highlight -->
+  <path d="M 345 225 C 325 225, 310 240, 310 250 C 310 255, 320 265, 340 270 Z" fill="#DCDCDC" />
+
+  <!-- Bear Paws (Overlapping Axe and Shirt) -->
+  <!-- Left Paw -->
+  <circle cx="115" cy="425" r="18" fill="#5C4033" />
+  <circle cx="115" cy="425" r="8" fill="#D2B48C" />
+  <!-- Right Paw -->
+  <circle cx="385" cy="255" r="20" fill="#5C4033" />
+  <circle cx="385" cy="255" r="10" fill="#D2B48C" />
+
+</svg>
