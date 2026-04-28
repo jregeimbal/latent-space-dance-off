@@ -49,6 +49,14 @@ class TestDefaultValues:
         config = Config()
         assert config.JUDGING_CRITERIA == "creativity,aesthetics,complexity"
 
+    def test_default_disable_judging(self):
+        config = Config()
+        assert config.DISABLE_JUDGING is False
+
+    def test_disable_judging_custom(self):
+        config = Config(DISABLE_JUDGING=True)
+        assert config.DISABLE_JUDGING is True
+
 
 # -- Env var loading (via constructor) --
 

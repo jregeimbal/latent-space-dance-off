@@ -36,14 +36,16 @@ console = Console()
 
 
 def get_config(ollama_host: str = "http://localhost:11434", output_dir: str = "./output", 
-                 num_judges: int = 3, model_list: str = "", judging_criteria: str = ""):
+                 num_judges: int = 3, model_list: str = "", judging_criteria: str = "",
+                 disable_judging: bool = False):
     config = Config(
         OLLAMA_HOST=ollama_host,
         OUTPUT_DIR=output_dir,
         NUM_JUDGES=num_judges,
         MODEL_LIST=model_list,
-        JUDGING_CRITERIA=judging_criteria
-        )
+        JUDGING_CRITERIA=judging_criteria,
+        DISABLE_JUDGING=disable_judging
+         )
     return config
 
 
@@ -91,10 +93,11 @@ async def _run_impl(
     num_judges: int,
     output_dir: str,
     ollama_host: str,
-    judging_criteria: str = "creativity,aesthetics,complexity"
+    judging_criteria: str = "creativity,aesthetics,complexity",
+    disable_judging: bool = False,
 ):
     theme_list = [t.strip() for t in themes.split(",")]
-    config = get_config(ollama_host, output_dir, num_judges, models or "", judging_criteria)
+    config = get_config(ollama_host, output_dir, num_judges, models or "", judging_criteria, disable_judging)
     
     model_manager = ModelManager(host=ollama_host)
     benchmark_manager = BenchmarkManager(config)
@@ -114,9 +117,9 @@ async def _run_impl(
         f"Starting benchmark with {len(model_list)} models and {len(theme_list)} themes",
         f"Models: {', '.join(model_list)}",
         f"Themes: {', '.join(theme_list)}",
-        f"Judges: {num_judges}",
+        f"Judges: {'None' if disable_judging else num_judges}",
         f"Output: {output_dir}"
-      ]
+       ]
     console.print(Panel("\n".join(info_lines),
         title="[bold green]Latent Space Dance Off[/bold green]",
         border_style="green"
@@ -202,10 +205,10 @@ async def _run_impl(
         themes=theme_list
         )
 
-    if svg_results:
+    if svg_results and not disable_judging:
         console.print(f"\n[cyan]Starting judgment phase with {num_judges} judge models...[/cyan]\n")
         
-        # Show judgment progress
+         # Show judgment progress
         svg_judge_count = len(list(model_clients.values())) * len(svg_results)
         
         with Progress(
@@ -213,12 +216,12 @@ async def _run_impl(
             TextColumn("[progress.description]{task.description}"),
             BarColumn(),
             TaskProgressColumn(),
-              ) as progress:
+               ) as progress:
             judge_task = progress.add_task(" Judging SVGs...", total=svg_judge_count)
             
-            # judge_models = list(model_clients.values())
-            # if len(judge_models) < num_judges:
-            #     judge_models = judge_models * (num_judges // len(judge_models) + 1)
+             # judge_models = list(model_clients.values())
+             # if len(judge_models) < num_judges:
+             #     judge_models = judge_models * (num_judges // len(judge_models) + 1)
             
             judgments = await svg_judge.run_all_judgments(model_clients, svg_results, num_judges, progress, judge_task)
             run_data.judgments = judgments
@@ -227,40 +230,40 @@ async def _run_impl(
         benchmark_manager.save_run_data(run_data)
         console.print(f"\n[yellow]Benchmark data saved to: {run_dir}/benchmark.json[/yellow]")
         
-         # Generate HTML report
+          # Generate HTML report
         html_path = run_dir / "benchmark_report.html"
         run_data_dict = {
-             "run_id": run_data.run_id,
-             "timestamp": run_data.timestamp,
-             "svgs": [{"model_name": s.model_name, "theme": s.theme,
-                       "svg_code": s.svg_code, "svg_path": s.svg_path,
-                       "duration_ms": s.duration_ms, "tokens_used": s.tokens_used,
-                       "status": s.status} for s in run_data.svgs],
-              "model_list": run_data.model_list,
-              "themes": run_data.themes,
-              "judgments": [],
-              "criteria": config.judging_criteria
-          }
-         # Convert judgments to dicts
+              "run_id": run_data.run_id,
+              "timestamp": run_data.timestamp,
+              "svgs": [{"model_name": s.model_name, "theme": s.theme,
+                        "svg_code": s.svg_code, "svg_path": s.svg_path,
+                        "duration_ms": s.duration_ms, "tokens_used": s.tokens_used,
+                        "status": s.status} for s in run_data.svgs],
+               "model_list": run_data.model_list,
+               "themes": run_data.themes,
+               "judgments": [],
+               "criteria": config.judging_criteria
+            }
+          # Convert judgments to dicts
         for j in getattr(run_data, 'judgments', []):
-              # Handle both old format (individual scores) and new format (scores dict)
+               # Handle both old format (individual scores) and new format (scores dict)
             scores_dict = j.scores if hasattr(j, 'scores') and j.scores else {
-                  "creativity": j.creativity_score if hasattr(j, 'creativity_score') else None,
-                  "aesthetics": j.aesthetics_score if hasattr(j, 'aesthetics_score') else None,
-                  "complexity": j.complexity_score if hasattr(j, 'complexity_score') else None
-              }
+                   "creativity": j.creativity_score if hasattr(j, 'creativity_score') else None,
+                   "aesthetics": j.aesthetics_score if hasattr(j, 'aesthetics_score') else None,
+                   "complexity": j.complexity_score if hasattr(j, 'complexity_score') else None
+                }
             
             run_data_dict["judgments"].append({
-                   "svg_id": j.svg_id,
-                   "judged_by": j.judged_by,
-                   "scores": scores_dict,
-                   "total_score": j.total_score,
-                   "reason": j.reason,
-                   "rank": j.rank,
-                   "winner_svg": j.winner_svg,
-                   "criteria_used": getattr(j, 'criteria_used', config.judging_criteria),
-                   "judge_prompt": getattr(j, 'judge_prompt', None)
-              })
+                    "svg_id": j.svg_id,
+                    "judged_by": j.judged_by,
+                    "scores": scores_dict,
+                    "total_score": j.total_score,
+                    "reason": j.reason,
+                    "rank": j.rank,
+                    "winner_svg": j.winner_svg,
+                    "criteria_used": getattr(j, 'criteria_used', config.judging_criteria),
+                    "judge_prompt": getattr(j, 'judge_prompt', None)
+               })
         generate_benchmark_html(run_data_dict, html_path)
         console.print(f"[yellow]HTML report saved to: {html_path}[/yellow]")
         
@@ -271,7 +274,7 @@ async def _run_impl(
         console.print(f"\n[bold cyan]Judge output (Criteria: {criteria_display}):[/bold cyan]\n")
         for judgment in judgments:
             scores_str = ", ".join(f"{c.capitalize()}={getattr(judgment, 'scores', {}).get(c, 'N/A')}" for c in config.judging_criteria)
-            console.print(f"   {judgment.svg_id}: {scores_str}")
+            console.print(f"    {judgment.svg_id}: {scores_str}")
         
         console.print("\n[bold cyan]Final Rankings:[/bold cyan]\n")
         console.print(Panel.fit(f"[bold]Final Rankings (Criteria: {criteria_display})[/bold]"))
@@ -281,13 +284,13 @@ async def _run_impl(
         table.add_column("Model", style="magenta")
         table.add_column("SVG ID", style="cyan")
         
-          # Add columns for each criterion dynamically
+           # Add columns for each criterion dynamically
         for criterion in config.judging_criteria:
             table.add_column(criterion.capitalize(), justify="right")
         table.add_column("Total", justify="right", style="bold green")
 
         for entry in leaderboard.rankings:
-               # Get scores for each criterion dynamically
+                # Get scores for each criterion dynamically
             score_values = []
             for criterion in config.judging_criteria:
                 score_val = entry.get_score(criterion) if hasattr(entry, 'get_score') else getattr(entry, f'{criterion}_score', 0)
@@ -299,9 +302,32 @@ async def _run_impl(
                 str(entry.rank),
                 entry.model_name,
                 entry.svg_id,
-                  *score_values                 )
+                   *score_values                  )
         console.print(table)
         console.print(f"\n[yellow]Leaderboard saved to: {leaderboard_path}[/yellow]")
+    elif svg_results and disable_judging:
+        
+        benchmark_manager.save_run_data(run_data)
+        console.print(f"\n[yellow]Benchmark data saved to: {run_dir}/benchmark.json[/yellow]")
+        
+          # Generate HTML report without judging data
+        html_path = run_dir / "benchmark_report.html"
+        run_data_dict = {
+              "run_id": run_data.run_id,
+              "timestamp": run_data.timestamp,
+              "svgs": [{"model_name": s.model_name, "theme": s.theme,
+                        "svg_code": s.svg_code, "svg_path": s.svg_path,
+                        "duration_ms": s.duration_ms, "tokens_used": s.tokens_used,
+                        "status": s.status} for s in run_data.svgs],
+               "model_list": run_data.model_list,
+               "themes": run_data.themes,
+               "judgments": [],
+               "criteria": config.judging_criteria
+            }
+        generate_benchmark_html(run_data_dict, html_path)
+        console.print(f"[yellow]HTML report saved to: {html_path}[/yellow]")
+        
+        console.print("[yellow]Judging was disabled. No judge output or leaderboard generated.[/yellow]")
     else:
         console.print("[red]No SVGs to judge.[/red]")
 
@@ -315,9 +341,10 @@ def run(
     num_judges: int = typer.Option(3, "--judges", "-j"),
     output_dir: str = typer.Option("./output", "--output", "-o"),
     ollama_host: str = typer.Option("http://localhost:11434", "--ollama-host", "--host"),
-    judging_criteria: str = typer.Option("creativity,aesthetics,complexity", "--criteria", "-c", help="Comma-separated list of judging criteria")
+    judging_criteria: str = typer.Option("creativity,aesthetics,complexity", "--criteria", "-c", help="Comma-separated list of judging criteria"),
+    no_judging: bool = typer.Option(False, "--no-judging", help="Skip the judging phase entirely"),
 ):
-    asyncio.run(_run_impl(models, themes, num_judges, output_dir, ollama_host, judging_criteria))
+    asyncio.run(_run_impl(models, themes, num_judges, output_dir, ollama_host, judging_criteria, no_judging))
 
 
 @app.command()

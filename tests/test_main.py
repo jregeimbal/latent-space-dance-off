@@ -14,7 +14,8 @@ class TestGetConfig:
                 NUM_JUDGES=3,
                 MODEL_LIST="",
                 JUDGING_CRITERIA="",
-            )
+                DISABLE_JUDGING=False,
+             )
             assert result == MockConfig.return_value
 
     def test_overrides_ollama_host(self):
@@ -52,6 +53,20 @@ class TestGetConfig:
 
             call_kwargs = MockConfig.call_args[1]
             assert call_kwargs["JUDGING_CRITERIA"] == "style,clarity"
+
+    def test_disables_judging(self):
+        with patch("main.Config") as MockConfig:
+            get_config(disable_judging=True)
+
+            call_kwargs = MockConfig.call_args[1]
+            assert call_kwargs["DISABLE_JUDGING"] is True
+
+    def test_judging_enabled_by_default(self):
+        with patch("main.Config") as MockConfig:
+            get_config()
+
+            call_kwargs = MockConfig.call_args[1]
+            assert call_kwargs["DISABLE_JUDGING"] is False
 
 
 class TestParseModels:

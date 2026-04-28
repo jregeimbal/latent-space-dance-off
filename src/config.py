@@ -59,6 +59,10 @@ class Config(BaseModel):
     JUDGING_CRITERIA: str = Field(
         default="creativity,aesthetics,complexity",
         description="Comma-separated list of judging criteria"
+      )
+    DISABLE_JUDGING: bool = Field(
+        default=False,
+        description="When True, skip the judging phase entirely"
     )
 
     model_config = ConfigDict()
