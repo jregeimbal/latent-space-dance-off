@@ -10,6 +10,8 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from typing import Callable, Optional
+
 from ollama import AsyncClient
 from pydantic import BaseModel, Field
 from rich.console import Console
@@ -181,34 +183,40 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
 
         return text[start:end + 6]
 
-    async def generate_svg(self, model_client: AsyncClient, theme: str, model_name: str, run_id: Optional[str] = None) -> SVGResult:
+    async def generate_svg(self, model_client: AsyncClient, theme: str, model_name: str, run_id: Optional[str] = None, progress_callback: Optional[Callable[[str], None]] = None) -> SVGResult:
         """Generate SVG by calling the model."""
         start_time = time.perf_counter()
+        full_streamed_text = ""
 
         try:
-            # Generate prompt
             prompt = self._get_svg_prompt(theme, model_name)
 
-            # Call the model to clear context
             response = await model_client.generate(
                 model=model_name,
                 prompt='/clear',
                 stream=False
             )
 
-            # Call the model
             response = await model_client.generate(
                 model=model_name,
                 prompt=prompt,
-                stream=False
-            )
+                stream=True
+             )
 
-             # Calculate duration
+            last_chunk = None
+            async for chunk in response:
+                chunk_text = getattr(chunk, 'response', '') or ''
+                full_streamed_text += chunk_text
+                last_chunk = chunk
+                if progress_callback and chunk_text:
+                    cleaned = re.sub(r'[^a-zA-Z0-9]', '', chunk_text)
+                    if cleaned:
+                        progress_callback(cleaned)
+
             duration_ms = (time.perf_counter() - start_time) * 1000
-              # Ollama returns Model object with attr 'response', not dict
-            svg_output = getattr(response, 'response', None) or str(response)
-            tokens_evaluated = getattr(response, 'eval_count', None)
-            prompt_tokens_evaluated = getattr(response, 'prompt_eval_count', None)
+            svg_output = last_chunk and getattr(last_chunk, 'response', None) or full_streamed_text
+            tokens_evaluated = last_chunk and getattr(last_chunk, 'eval_count', None)
+            prompt_tokens_evaluated = getattr(last_chunk, 'prompt_eval_count', None) if last_chunk else None
             tokens = svg_output
             
              # Extract SVG

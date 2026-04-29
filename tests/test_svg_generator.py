@@ -239,7 +239,16 @@ class TestGenerateSvg:
         mock_response.response = '<svg width="100"><circle/></svg>'
         mock_response.eval_count = 50
         mock_response.prompt_eval_count = 200
-        mock_client.generate = AsyncMock(return_value=mock_response)
+        mock_clear = Mock(response='ok', eval_count=10, prompt_eval_count=5)
+
+        async def make_iter(chunks):
+            for c in chunks:
+                yield c
+
+        mock_client.generate.side_effect = [
+            make_iter([mock_clear]),
+            make_iter([mock_response]),
+        ]
 
         async def _do():
             return await generator.generate_svg(mock_client, "abstract", "llama3", "run-1")
@@ -258,7 +267,11 @@ class TestGenerateSvg:
 
     def test_failure_path(self, generator):
         mock_client = AsyncMock()
-        mock_client.generate = AsyncMock(side_effect=RuntimeError("model timeout"))
+
+        async def fail_gen(*args, **kwargs):
+            raise RuntimeError("model timeout")
+
+        mock_client.generate = AsyncMock(side_effect=fail_gen)
 
         async def _do():
             return await generator.generate_svg(mock_client, "landscape", "llama3", "run-2")
@@ -318,7 +331,19 @@ class TestGenerateMultipleSvgs:
         mock_response.response = '<svg width="100"><circle/></svg>'
         mock_response.eval_count = 30
         mock_response.prompt_eval_count = 100
-        mock_client.generate = AsyncMock(return_value=mock_response)
+        mock_clear = Mock(response='ok', eval_count=5, prompt_eval_count=2)
+
+        async def make_iter(chunks):
+            for c in chunks:
+                yield c
+
+        # 4 calls * 2 generate() each = 8 total
+        calls = []
+        for _ in range(4):
+            calls.append(make_iter([mock_clear]))
+            calls.append(make_iter([mock_response]))
+
+        mock_client.generate.side_effect = calls
 
         model_clients = {"model_a": mock_client, "model_b": mock_client}
         themes = ["abstract", "landscape"]

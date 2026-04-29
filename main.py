@@ -9,7 +9,7 @@ import asyncio
 import json
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 import typer
 from rich.console import Console
@@ -158,10 +158,19 @@ async def _run_impl(
         svg_task = progress.add_task("Generating SVGs...", total=len(model_clients) * len(theme_list))
 
         svg_results = []
+        streamed_text = ""
+
+        def update_progress(cleaned: str):
+            nonlocal streamed_text
+            streamed_text += cleaned
+            last_10 = streamed_text[-10:]
+            progress.update(svg_task, description=f"Generating {model_name} ({theme}) | {last_10}")
+
         for model_name in model_clients:
             for theme in theme_list:
-                progress.update(svg_task, description=f"Generating {model_name} ({theme})")
-                result = await svg_generator.generate_svg(model_clients[model_name], theme, model_name, run_id)
+                streamed_text = ""
+                progress.update(svg_task, description=f"Generating {model_name} ({theme}) | ")
+                result = await svg_generator.generate_svg(model_clients[model_name], theme, model_name, run_id, progress_callback=update_progress)
                 svg_results.append(result)
                 progress.update(svg_task, advance=1)
 
