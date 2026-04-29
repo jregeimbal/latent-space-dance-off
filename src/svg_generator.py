@@ -209,7 +209,7 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
                 full_streamed_text += chunk_text
                 last_chunk = chunk
                 if progress_callback and chunk_text:
-                    cleaned = re.sub(r'[^a-zA-Z0-9]', '', chunk_text)
+                    cleaned = re.sub(r'[\x00-\x1f\x7f]', '', chunk_text)
                     if cleaned:
                         progress_callback(cleaned)
 

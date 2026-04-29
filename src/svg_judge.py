@@ -26,11 +26,11 @@ class Judgment(BaseModel):
     judged_by: str
     scores: Dict[str, Optional[float]] = Field(default_factory=dict, description="Dynamic scores for each criterion")
     total_score: Optional[float] = Field(None, ge=1, le=10)
-    reason: Optional[str] = Field(None, description="Reasoning for the judgment")
-    rank: Optional[int] = Field(None, description="Ranking among compared SVGs")
-    winner_svg: Optional[str] = Field(None, description="Winner in head-to-head")
+    reason: Optional[str] = Field(default=None, description="Reasoning for the judgment")
+    rank: Optional[int] = Field(default=None, description="Ranking among compared SVGs")
+    winner_svg: Optional[str] = Field(default=None, description="Winner in head-to-head")
     criteria_used: List[str] = Field(default_factory=lambda: ["creativity", "aesthetics", "complexity"], description="List of criteria used for this judgment")
-    judge_prompt: Optional[str] = Field(None, description="The full prompt sent to the judge model")
+    judge_prompt: Optional[str] = Field(default=None, description="The full prompt sent to the judge model")
 
 
 class Comparison(BaseModel):

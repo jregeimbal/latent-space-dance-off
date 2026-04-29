@@ -8,6 +8,7 @@ and judge each other's work.
 import asyncio
 import json
 import sys
+import time
 from pathlib import Path
 from typing import Callable, List, Optional
 
@@ -163,15 +164,20 @@ async def _run_impl(
         def update_progress(cleaned: str):
             nonlocal streamed_text
             streamed_text += cleaned
-            last_10 = streamed_text[-10:]
-            progress.update(svg_task, description=f"Generating {model_name} ({theme}) | {last_10}")
+            last_20 = streamed_text[-20:]
+            elapsed = time.perf_counter() - generation_start
+            elapsed_str = f"{elapsed:.1f}s"
+            progress.update(svg_task, description=f"Generating {model_name} ({theme}) | {elapsed_str} | {last_20}")
 
         for model_name in model_clients:
             for theme in theme_list:
                 streamed_text = ""
-                progress.update(svg_task, description=f"Generating {model_name} ({theme}) | ")
+                generation_start = time.perf_counter()
+                progress.update(svg_task, description=f"Generating {model_name} ({theme}) | 0.0s | Thinking...")
                 result = await svg_generator.generate_svg(model_clients[model_name], theme, model_name, run_id, progress_callback=update_progress)
                 svg_results.append(result)
+                final_elapsed = time.perf_counter() - generation_start
+                progress.update(svg_task, description=f"Generating {model_name} ({theme}) | Done ({final_elapsed:.1f}s)")
                 progress.update(svg_task, advance=1)
 
     console.print("\n[cyan]Benchmark Results[/cyan]")

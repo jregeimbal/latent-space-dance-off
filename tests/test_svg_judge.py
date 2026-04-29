@@ -1,6 +1,7 @@
 """Tests for svg_judge module."""
 
 from pathlib import Path
+from typing import Dict, Optional
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -11,9 +12,13 @@ from src.svg_judge import Comparison, Judgment, SVGJudge
 from tests.conftest import _run_async
 
 
+def _scores(creativity: float = 5.0, aesthetics: float = 5.0, complexity: float = 5.0) -> Dict[str, Optional[float]]:
+    return {"creativity": creativity, "aesthetics": aesthetics, "complexity": complexity}
+
+
 class TestJudgmentModel:
     def test_creation_with_scores(self, mock_config):
-        scores = {"creativity": 7.5, "aesthetics": 8.0, "complexity": 6.5}
+        scores = _scores(creativity=7.5, aesthetics=8.0, complexity=6.5)
         judgment = Judgment(
             svg_id="test_1",
             svg_model_name="model_a",
@@ -21,7 +26,7 @@ class TestJudgmentModel:
             scores=scores,
             total_score=7.3,
             reason="good art",
-         )
+        )
         assert judgment.scores == scores
         assert judgment.total_score == 7.3
         assert judgment.svg_id == "test_1"
@@ -31,9 +36,9 @@ class TestJudgmentModel:
             svg_id="test_2",
             svg_model_name="model_a",
             judged_by="judge_1",
-            scores={"creativity": 5.0, "aesthetics": 5.0, "complexity": 5.0},
+            scores=_scores(),
             total_score=5.0,
-         )
+        )
         assert judgment.criteria_used == ["creativity", "aesthetics", "complexity"]
 
     def test_total_score_bounded_below(self, mock_config):
@@ -42,9 +47,9 @@ class TestJudgmentModel:
                 svg_id="test_3",
                 svg_model_name="model_a",
                 judged_by="judge_1",
-                scores={"creativity": 1.0, "aesthetics": 1.0, "complexity": 1.0},
+                scores=_scores(creativity=1.0, aesthetics=1.0, complexity=1.0),
                 total_score=0.5,
-             )
+            )
 
     def test_total_score_bounded_above(self, mock_config):
         with pytest.raises(ValidationError):
@@ -52,9 +57,9 @@ class TestJudgmentModel:
                 svg_id="test_4",
                 svg_model_name="model_a",
                 judged_by="judge_1",
-                scores={"creativity": 10.0, "aesthetics": 10.0, "complexity": 10.0},
+                scores=_scores(creativity=10.0, aesthetics=10.0, complexity=10.0),
                 total_score=11.0,
-             )
+            )
 
 
 class TestComparisonModel:
@@ -64,7 +69,7 @@ class TestComparisonModel:
             svg2_model="model_b",
             winner="model_a",
             reasoning="more creative",
-         )
+        )
         assert comparison.svg1_model == "model_a"
         assert comparison.svg2_model == "model_b"
         assert comparison.winner == "model_a"
@@ -75,7 +80,7 @@ class TestComparisonModel:
             svg1_model="model_a",
             svg2_model="model_b",
             winner="model_a",
-         )
+        )
         assert comparison.timestamp is not None
         assert len(comparison.timestamp) > 0
 
@@ -95,13 +100,13 @@ class TestParseJsonResponse:
         assert result["reason"] == "nice"
 
     def test_json_in_markdown_code_block(self):
-        text = "```json\n{\"creativity_score\": 9, \"reason\": \"amazing\"}\n```"
+        text = '```json\n{"creativity_score": 9, "reason": "amazing"}\n```'
         result = self.judge._parse_json_response(text)
         assert result["creativity_score"] == 9
         assert result["reason"] == "amazing"
 
     def test_raw_json_with_braces_extracted(self):
-        text = "Some preamble text {\"creativity_score\": 6}\nMore text"
+        text = 'Some preamble text {"creativity_score": 6}\nMore text'
         result = self.judge._parse_json_response(text)
         assert result["creativity_score"] == 6
 
@@ -145,21 +150,23 @@ class TestJudgeSvg:
         svg_path = Path("/tmp/test.svg")
         svg_content = '<svg><circle cx="50" cy="50" r="40"/></svg>'
 
-        result = _run_async(judge.judge_svg(
-            model_client=mock_client,
-            svg_path=svg_path,
-            svg_content=svg_content,
-            svg_id="model_a_abstract",
-            model_name="model_a",
-            judge_name="judge_model_a_1",
-            generation_prompt="draw abstract art",
-         ))
+        result = _run_async(
+            judge.judge_svg(
+                model_client=mock_client,
+                svg_path=svg_path,
+                svg_content=svg_content,
+                svg_id="model_a_abstract",
+                model_name="model_a",
+                judge_name="judge_model_a_1",
+                generation_prompt="draw abstract art",
+            )
+        )
 
         assert isinstance(result, Judgment)
         assert result.scores["creativity"] == 8.0
         assert result.scores["aesthetics"] == 7.0
         assert result.scores["complexity"] == 6.0
-        assert pytest.approx(result.total_score) == 7.0
+        assert result.total_score == pytest.approx(7.0)
         assert result.reason == "good work"
         assert result.judged_by == "judge_model_a_1"
         assert result.judge_prompt is not None
@@ -172,22 +179,24 @@ class TestJudgeSvg:
         svg_path = Path("/tmp/test.svg")
         svg_content = '<svg><circle cx="50" cy="50" r="40"/></svg>'
 
-        result = _run_async(judge.judge_svg(
-            model_client=mock_client,
-            svg_path=svg_path,
-            svg_content=svg_content,
-            svg_id="model_a_abstract",
-            model_name="model_a",
-            judge_name="judge_model_a_1",
-            generation_prompt="draw abstract art",
-         ))
+        result = _run_async(
+            judge.judge_svg(
+                model_client=mock_client,
+                svg_path=svg_path,
+                svg_content=svg_content,
+                svg_id="model_a_abstract",
+                model_name="model_a",
+                judge_name="judge_model_a_1",
+                generation_prompt="draw abstract art",
+            )
+        )
 
         assert isinstance(result, Judgment)
         assert result.scores["creativity"] == 5.0
         assert result.scores["aesthetics"] == 5.0
         assert result.scores["complexity"] == 5.0
         assert result.total_score == 5.0
-        assert "Error during judging" in result.reason
+        assert result.reason is not None and "Error during judging" in result.reason
 
 
 class TestRunAllJudgments:
@@ -195,7 +204,14 @@ class TestRunAllJudgments:
         judge = SVGJudge(mock_config)
 
         class MockSVGResult:
-            def __init__(self, model_name, theme, svg_code="svg", svg_path=None, generation_prompt=None):
+            def __init__(
+                self,
+                model_name,
+                theme,
+                svg_code="svg",
+                svg_path=None,
+                generation_prompt=None,
+            ):
                 self.model_name = model_name
                 self.theme = theme
                 self.svg_code = svg_code
@@ -205,7 +221,7 @@ class TestRunAllJudgments:
         svg_results = [
             MockSVGResult("model_a", "abstract"),
             MockSVGResult("model_b", "landscape"),
-         ]
+        ]
 
         mock_client_a = AsyncMock()
         mock_client_b = AsyncMock()
@@ -238,40 +254,40 @@ class TestAggregateJudgments:
         svg_results = [
             MockSVGResult("model_a", "abstract"),
             MockSVGResult("model_b", "landscape"),
-          ]
+        ]
 
         judgments = [
             Judgment(
                 svg_id="model_a_abstract",
                 svg_model_name="model_a",
                 judged_by="judge_1",
-                scores={"creativity": 8.0, "aesthetics": 7.0, "complexity": 6.0},
+                scores=_scores(creativity=8.0, aesthetics=7.0, complexity=6.0),
                 total_score=7.0,
-                ),
+            ),
             Judgment(
                 svg_id="model_b_landscape",
                 svg_model_name="model_b",
                 judged_by="judge_1",
-                scores={"creativity": 9.0, "aesthetics": 8.0, "complexity": 7.0},
+                scores=_scores(creativity=9.0, aesthetics=8.0, complexity=7.0),
                 total_score=8.0,
-                ),
-           ]
+            ),
+        ]
 
         result = judge.aggregate_judgments(svg_results, judgments)
 
         assert "model_a" in result
         model_a = result["model_a"]
-        assert pytest.approx(model_a["creativity"]) == 8.0
-        assert pytest.approx(model_a["aesthetics"]) == 7.0
-        assert pytest.approx(model_a["complexity"]) == 6.0
+        assert model_a["creativity"] == pytest.approx(8.0)
+        assert model_a["aesthetics"] == pytest.approx(7.0)
+        assert model_a["complexity"] == pytest.approx(6.0)
         assert isinstance(model_a["themes"], list)
         assert model_a["criteria"] == ["creativity", "aesthetics", "complexity"]
 
         assert "model_b" in result
         model_b = result["model_b"]
-        assert pytest.approx(model_b["creativity"]) == 9.0
-        assert pytest.approx(model_b["aesthetics"]) == 8.0
-        assert pytest.approx(model_b["complexity"]) == 7.0
+        assert model_b["creativity"] == pytest.approx(9.0)
+        assert model_b["aesthetics"] == pytest.approx(8.0)
+        assert model_b["complexity"] == pytest.approx(7.0)
         assert isinstance(model_b["themes"], list)
 
     def test_handles_missing_judgments_for_model(self, mock_config):
@@ -285,17 +301,17 @@ class TestAggregateJudgments:
         svg_results = [
             MockSVGResult("model_a", "abstract"),
             MockSVGResult("model_b", "landscape"),
-          ]
+        ]
 
         judgments = [
             Judgment(
                 svg_id="model_a_abstract",
                 svg_model_name="model_a",
                 judged_by="judge_1",
-                scores={"creativity": 7.0, "aesthetics": 7.0, "complexity": 7.0},
+                scores=_scores(creativity=7.0, aesthetics=7.0, complexity=7.0),
                 total_score=7.0,
-             )
-         ]
+            )
+        ]
 
         result = judge.aggregate_judgments(svg_results, judgments)
 
