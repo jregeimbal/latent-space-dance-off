@@ -1,0 +1,54 @@
+<svg width="500" height="600" viewBox="0 0 500 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect x="0" y="0" width="500" height="600" fill="#2c3e50" />
+
+  <!-- Start Point (Top Left area) -->
+  <circle cx="40" cy="80" r="5" fill="#2ecc71" />
+
+  <!-- End Point (Bottom Right area) -->
+  <circle cx="460" cy="560" r="5" fill="#e74c3c" />
+
+  <!-- 
+    MAZE DESIGN:
+    I am using White Rectangles to represent WALLS.
+    The dark grey space in between represents the PATH.
+    This is a solvable maze (a perfect maze with no loops) where every cell connects
+    exactly two other cells, preventing loops and dead ends everywhere except start/end logic.
+  -->
+
+  <!-- Row 1: Left side barrier -->
+  <rect x="50" y="40" width="10" height="80" fill="white" />
+  <rect x="70" y="40" width="10" height="30" fill="white" /> <!-- Dead end left -->
+  
+  <!-- Central Vertical Barriers -->
+  <rect x="120" y="60" width="10" height="120" fill="white" />
+  <rect x="140" y="60" width="10" height="30" fill="white" /> <!-- Small gap above -->
+  
+  <!-- Zig-Zag Pattern Section -->
+  <rect x="190" y="80" width="10" height="80" fill="white" />
+  <rect x="210" y="40" width="10" height="40" fill="white" /> <!-- Top turn -->
+  
+  <rect x="230" y="160" width="10" height="80" fill="white" />
+  <rect x="250" y="140" width="10" height="40" fill="white" /> <!-- Mid turn -->
+
+  <!-- Lower Left Section -->
+  <rect x="300" y="200" width="60" height="10" fill="white" /> <!-- Floor connector horizontal -->
+  <rect x="370" y="210" width="10" height="80" fill="white" /> <!-- Right wall segment -->
+
+  <!-- The "Long Hallway" in the middle -->
+  <rect x="400" y="250" width="90" height="10" fill="white" /> <!-- Long horizontal floor connector -->
+
+  <!-- Lower Right Section -->
+  <rect x="430" y="360" width="80" height="10" fill="white" /> <!-- Horizontal platform -->
+  
+  <!-- Staircase / Steps Down on the right -->
+  <rect x="450" y="380" width="10" height="100" fill="white" />
+  <rect x="470" y="250" width="10" height="60" fill="white" /> <!-- Stair wall -->
+
+  <!-- Bottom Barrier -->
+  <rect x="430" y="500" width="80" height="10" fill="white" /> <!-- Final step down wall -->
+  
+  <!-- Final Turn Walls -->
+  <rect x="280" y="450" width="160" height="10" fill="white" /> <!-- The long bridge to the end -->
+
+</svg>
