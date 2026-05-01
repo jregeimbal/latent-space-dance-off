@@ -230,7 +230,7 @@ class TestRankingSystem:
         run_data.themes = ["abstract"]
         run_data.judgments = [
             Judgment(
-                svg_id="svg-001",
+                svg_id="model_a_abstract_pass1",
                 svg_model_name="model_a",
                 judged_by="human-1",
                 creativity_score=0.9,
@@ -239,9 +239,9 @@ class TestRankingSystem:
             )
         ]
         results = system.aggregate_all_judgments(run_data, run_data.judgments)
-        assert "svg-001" in results
-        svg_score = results["svg-001"]
-        assert svg_score.svg_id == "svg-001"
+        assert "model_a" in results
+        svg_score = results["model_a"]
+        assert svg_score.svg_id == "model_a"
         assert svg_score.model_name == "model_a"
         assert svg_score.judgment_count == 1
         assert svg_score.scores["creativity"] == 0.9
@@ -255,7 +255,7 @@ class TestRankingSystem:
         run_data.themes = ["abstract"]
         run_data.judgments = [
             Judgment(
-                svg_id="svg-001",
+                svg_id="model_a_abstract_pass1",
                 svg_model_name="model_a",
                 judged_by="human-1",
                 creativity_score=0.6,
@@ -263,7 +263,7 @@ class TestRankingSystem:
                 complexity_score=0.6,
             ),
             Judgment(
-                svg_id="svg-001",
+                svg_id="model_a_abstract_pass1",
                 svg_model_name="model_a",
                 judged_by="human-2",
                 creativity_score=1.0,
@@ -272,7 +272,7 @@ class TestRankingSystem:
             ),
         ]
         results = system.aggregate_all_judgments(run_data, run_data.judgments)
-        svg_score = results["svg-001"]
+        svg_score = results["model_a"]
         assert svg_score.judgment_count == 2
         assert svg_score.scores["creativity"] == 0.8
         assert svg_score.scores["aesthetics"] == 0.8
@@ -284,14 +284,14 @@ class TestRankingSystem:
         run_data.model_list = ["model_a"]
         run_data.themes = ["abstract"]
         judgment = Judgment(
-            svg_id="svg-001",
+            svg_id="model_a_abstract_pass1",
             svg_model_name="model_a",
             judged_by="human-1",
           )
         judgment.scores = {"creativity": 0.9, "aesthetics": 8.0}
         run_data.judgments = [judgment]
         results = system.aggregate_all_judgments(run_data, run_data.judgments)
-        svg_score = results["svg-001"]
+        svg_score = results["model_a"]
         assert svg_score.scores["creativity"] == 0.9
         assert svg_score.scores["aesthetics"] == 8.0
 
@@ -302,7 +302,7 @@ class TestRankingSystem:
         run_data.themes = ["abstract"]
         run_data.judgments = [
             Judgment(
-                svg_id="svg-001",
+                svg_id="model_a_abstract_pass1",
                 svg_model_name="model_a",
                 judged_by="human-1",
                 creativity_score=0.5,
@@ -311,7 +311,7 @@ class TestRankingSystem:
             )
         ]
         results = system.aggregate_all_judgments(run_data, run_data.judgments)
-        svg_score = results["svg-001"]
+        svg_score = results["model_a"]
         assert svg_score.scores["creativity"] == 0.5
         assert svg_score.scores["aesthetics"] == 0.6
         assert svg_score.scores["complexity"] == 0.7
@@ -348,9 +348,10 @@ class TestRankingSystem:
         run_data.timestamp = "2024-01-01T12:00:00"
         run_data.model_list = ["model_a", "model_b"]
         run_data.themes = ["abstract"]
+        run_data.svgs = []
         run_data.judgments = [
             Judgment(
-                svg_id="svg-001",
+                svg_id="model_a_abstract_pass1",
                 svg_model_name="model_a",
                 judged_by="human-1",
                 creativity_score=0.9,
@@ -358,7 +359,7 @@ class TestRankingSystem:
                 complexity_score=0.7,
             ),
             Judgment(
-                svg_id="svg-002",
+                svg_id="model_b_abstract_pass1",
                 svg_model_name="model_b",
                 judged_by="human-1",
                 creativity_score=0.6,
@@ -372,7 +373,7 @@ class TestRankingSystem:
         assert leaderboard.total_judgments == 2
         assert leaderboard.total_models == 2
         assert len(leaderboard.rankings) == 2
-        assert leaderboard.rankings[0].svg_id == "svg-001"
+        assert leaderboard.rankings[0].model_name == "model_a"
         assert leaderboard.rankings[0].rank == 1
 
     def test_save_and_load_leaderboard_round_trip(self, temp_output_dir):

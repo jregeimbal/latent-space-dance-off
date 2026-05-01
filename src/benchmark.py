@@ -22,6 +22,7 @@ class SVGResult(BaseModel):
     status: str = "success"
     error_message: Optional[str] = None
     generation_prompt: Optional[str] = None
+    pass_number: int = 1
 
     # Dynamically set by BenchmarkManager.record_generation()
     benchmark_record: Optional["BenchmarkRecord"] = Field(default=None, exclude=True)
@@ -93,7 +94,8 @@ class BenchmarkManager:
             "timestamp": run_data.timestamp,
             "svgs": [{"model_name": s.model_name, "theme": s.theme, 
                       "svg_code": s.svg_code, "svg_path": s.svg_path,
-                      "generation_prompt": s.generation_prompt} 
+                      "generation_prompt": s.generation_prompt,
+                      "pass_number": s.pass_number}
                       for s in run_data.svgs],
             "benchmarks": [{"run_id": b.run_id, "model_name": b.model_name,
                             "theme": b.theme, "duration_ms": b.duration_ms,
@@ -137,7 +139,8 @@ class BenchmarkManager:
             data = json.load(f)
             svgs = [SVGResult(model_name=s["model_name"], theme=s["theme"],
                               svg_code=s["svg_code"], svg_path=s["svg_path"],
-                              generation_prompt=s.get("generation_prompt"))
+                              generation_prompt=s.get("generation_prompt"),
+                              pass_number=s.get("pass_number", 1))
                     for s in data.get("svgs", [])]
         benchmarks = [BenchmarkRecord(run_id=b["run_id"], model_name=b["model_name"],
                                       theme=b["theme"], duration_ms=b["duration_ms"],

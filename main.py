@@ -96,6 +96,7 @@ async def _run_impl(
     ollama_host: str,
     judging_criteria: str = "creativity,aesthetics,complexity",
     disable_judging: bool = False,
+    num_passes: int = 1,
 ):
     theme_list = [t.strip() for t in themes.split(",")]
     config = get_config(ollama_host, output_dir, num_judges, models or "", judging_criteria, disable_judging)
@@ -119,6 +120,7 @@ async def _run_impl(
         f"Models: {', '.join(model_list)}",
         f"Themes: {', '.join(theme_list)}",
         f"Judges: {'None' if disable_judging else num_judges}",
+        f"Passes: {num_passes}",
         f"Output: {output_dir}"
        ]
     console.print(Panel("\n".join(info_lines),
@@ -148,7 +150,7 @@ async def _run_impl(
     assets_dir = run_dir / "assets"
     svg_generator = SVGGenerator(config, svgs_dir=assets_dir)
     console.print(f"[yellow]Output directory: {run_dir}[/yellow]")
-    console.print(f"\n[cyan]Generating SVGs for {len(model_clients)} models x {len(theme_list)} themes...[/cyan]")
+    console.print(f"\n[cyan]Generating SVGs for {len(model_clients)} models x {len(theme_list)} themes x {num_passes} passes...[/cyan]")
 
     with Progress(
         SpinnerColumn(),
@@ -156,7 +158,7 @@ async def _run_impl(
         BarColumn(),
         TaskProgressColumn(),
        ) as progress:
-        svg_task = progress.add_task("Generating SVGs...", total=len(model_clients) * len(theme_list))
+        svg_task = progress.add_task("Generating SVGs...", total=len(model_clients) * len(theme_list) * num_passes)
 
         svg_results = []
         streamed_text = ""
@@ -167,18 +169,19 @@ async def _run_impl(
             last_20 = streamed_text[-20:]
             elapsed = time.perf_counter() - generation_start
             elapsed_str = f"{elapsed:.1f}s"
-            progress.update(svg_task, description=f"Generating {model_name} ({theme}) | {elapsed_str} | {last_20}")
+            progress.update(svg_task, description=f"Generating {model_name} ({theme}, pass {pass_num}) | {elapsed_str} | {last_20}")
 
         for model_name in model_clients:
             for theme in theme_list:
-                streamed_text = ""
-                generation_start = time.perf_counter()
-                progress.update(svg_task, description=f"Generating {model_name} ({theme}) | 0.0s | Thinking...")
-                result = await svg_generator.generate_svg(model_clients[model_name], theme, model_name, run_id, progress_callback=update_progress)
-                svg_results.append(result)
-                final_elapsed = time.perf_counter() - generation_start
-                progress.update(svg_task, description=f"Generating {model_name} ({theme}) | Done ({final_elapsed:.1f}s)")
-                progress.update(svg_task, advance=1)
+                for pass_num in range(1, num_passes + 1):
+                    streamed_text = ""
+                    generation_start = time.perf_counter()
+                    progress.update(svg_task, description=f"Generating {model_name} ({theme}, pass {pass_num}) | 0.0s | Thinking...")
+                    result = await svg_generator.generate_svg(model_clients[model_name], theme, model_name, run_id, progress_callback=update_progress, pass_number=pass_num)
+                    svg_results.append(result)
+                    final_elapsed = time.perf_counter() - generation_start
+                    progress.update(svg_task, description=f"Generating {model_name} ({theme}, pass {pass_num}) | Done ({final_elapsed:.1f}s)")
+                    progress.update(svg_task, advance=1)
 
     console.print("\n[cyan]Benchmark Results[/cyan]")
     console.print(Panel.fit("[bold]Generation Results[/bold]"))
@@ -207,7 +210,8 @@ async def _run_impl(
             tokens_used=int(r.tokens_used) if r.tokens_used else None,
             status=r.status,
             error_message=r.error_message,
-            generation_prompt=r.generation_prompt
+            generation_prompt=r.generation_prompt,
+            pass_number=r.pass_number
             ) for r in svg_results],
         benchmarks=[BenchmarkRecord(
             run_id=run_id,
@@ -253,7 +257,7 @@ async def _run_impl(
               "svgs": [{"model_name": s.model_name, "theme": s.theme,
                         "svg_code": s.svg_code, "svg_path": s.svg_path,
                         "duration_ms": s.duration_ms, "tokens_used": s.tokens_used,
-                        "status": s.status} for s in run_data.svgs],
+                        "status": s.status, "pass_number": s.pass_number} for s in run_data.svgs],
                "model_list": run_data.model_list,
                "themes": run_data.themes,
                "judgments": [],
@@ -333,7 +337,7 @@ async def _run_impl(
               "svgs": [{"model_name": s.model_name, "theme": s.theme,
                         "svg_code": s.svg_code, "svg_path": s.svg_path,
                         "duration_ms": s.duration_ms, "tokens_used": s.tokens_used,
-                        "status": s.status} for s in run_data.svgs],
+                        "status": s.status, "pass_number": s.pass_number} for s in run_data.svgs],
                "model_list": run_data.model_list,
                "themes": run_data.themes,
                "judgments": [],
@@ -358,8 +362,9 @@ def run(
     ollama_host: str = typer.Option("http://localhost:11434", "--ollama-host", "--host"),
     judging_criteria: str = typer.Option("creativity,aesthetics,complexity", "--criteria", "-c", help="Comma-separated list of judging criteria"),
     no_judging: bool = typer.Option(False, "--no-judging", help="Skip the judging phase entirely"),
+    num_passes: int = typer.Option(1, "--passes", "-p", help="Number of SVG passes per model per theme"),
 ):
-    asyncio.run(_run_impl(models, themes, num_judges, output_dir, ollama_host, judging_criteria, no_judging))
+    asyncio.run(_run_impl(models, themes, num_judges, output_dir, ollama_host, judging_criteria, no_judging, num_passes))
 
 
 @app.command()

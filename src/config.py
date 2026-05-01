@@ -38,6 +38,12 @@ class Config(BaseModel):
         le=10,
         description="Number of SVG themes per model"
     )
+    NUM_PASSES: int = Field(
+        default=1,
+        ge=1,
+        le=50,
+        description="Number of SVG passes per model per theme"
+    )
     DEFAULT_CREATIVITY_WEIGHT: float = Field(
         default=0.33,
         ge=0,

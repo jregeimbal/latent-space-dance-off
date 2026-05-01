@@ -211,12 +211,14 @@ class TestRunAllJudgments:
                 svg_code="svg",
                 svg_path=None,
                 generation_prompt=None,
+                pass_number=1,
             ):
                 self.model_name = model_name
                 self.theme = theme
                 self.svg_code = svg_code
                 self.svg_path = svg_path
                 self.generation_prompt = generation_prompt
+                self.pass_number = pass_number
 
         svg_results = [
             MockSVGResult("model_a", "abstract"),
@@ -246,10 +248,11 @@ class TestAggregateJudgments:
         judge = SVGJudge(mock_config)
 
         class MockSVGResult:
-            def __init__(self, model_name, theme, svg_path=None):
+            def __init__(self, model_name, theme, svg_path=None, pass_number=1):
                 self.model_name = model_name
                 self.theme = theme
                 self.svg_path = svg_path
+                self.pass_number = pass_number
 
         svg_results = [
             MockSVGResult("model_a", "abstract"),
@@ -258,14 +261,14 @@ class TestAggregateJudgments:
 
         judgments = [
             Judgment(
-                svg_id="model_a_abstract",
+                svg_id="model_a_abstract_pass1",
                 svg_model_name="model_a",
                 judged_by="judge_1",
                 scores=_scores(creativity=8.0, aesthetics=7.0, complexity=6.0),
                 total_score=7.0,
             ),
             Judgment(
-                svg_id="model_b_landscape",
+                svg_id="model_b_landscape_pass1",
                 svg_model_name="model_b",
                 judged_by="judge_1",
                 scores=_scores(creativity=9.0, aesthetics=8.0, complexity=7.0),
@@ -294,9 +297,10 @@ class TestAggregateJudgments:
         judge = SVGJudge(mock_config)
 
         class MockSVGResult:
-            def __init__(self, model_name, theme):
+            def __init__(self, model_name, theme, pass_number=1):
                 self.model_name = model_name
                 self.theme = theme
+                self.pass_number = pass_number
 
         svg_results = [
             MockSVGResult("model_a", "abstract"),
@@ -305,7 +309,7 @@ class TestAggregateJudgments:
 
         judgments = [
             Judgment(
-                svg_id="model_a_abstract",
+                svg_id="model_a_abstract_pass1",
                 svg_model_name="model_a",
                 judged_by="judge_1",
                 scores=_scores(creativity=7.0, aesthetics=7.0, complexity=7.0),

@@ -42,6 +42,7 @@ class SVGResult(BaseModel):
     error_message: Optional[str] = None
 
     generation_prompt: Optional[str] = None
+    pass_number: int = 1
 
 
 class SVGGenerator:
@@ -183,7 +184,7 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
 
         return text[start:end + 6]
 
-    async def generate_svg(self, model_client: AsyncClient, theme: str, model_name: str, run_id: Optional[str] = None, progress_callback: Optional[Callable[[str], None]] = None) -> SVGResult:
+    async def generate_svg(self, model_client: AsyncClient, theme: str, model_name: str, run_id: Optional[str] = None, progress_callback: Optional[Callable[[str], None]] = None, pass_number: int = 1) -> SVGResult:
         """Generate SVG by calling the model."""
         start_time = time.perf_counter()
         full_streamed_text = ""
@@ -224,9 +225,9 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
 
             # Determine filename
             if run_id:
-                svg_filename = f"{run_id}_{model_name.replace('/', '_')}_{theme}.svg"
+                svg_filename = f"{run_id}_{model_name.replace('/', '_')}_{theme}_pass{pass_number}.svg"
             else:
-                svg_filename = f"{model_name.replace('/', '_')}_{theme}.svg"
+                svg_filename = f"{model_name.replace('/', '_')}_{theme}_pass{pass_number}.svg"
 
             svg_path = self.svgs_dir / svg_filename
 
@@ -242,7 +243,8 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
                 tokens_used=tokens_evaluated,
                 status="success",
                 error_message=None,
-                generation_prompt=prompt
+                generation_prompt=prompt,
+                pass_number=pass_number
              )
 
         except Exception as e:
@@ -257,7 +259,8 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
                 tokens_used=None,
                 status="failed",
                 error_message=str(e),
-                generation_prompt=prompt
+                generation_prompt=prompt,
+                pass_number=pass_number
              )
 
     async def _save_svg(self, svg_code: str, filepath: Path) -> None:
@@ -271,7 +274,8 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
         self,
         model_clients: Dict[str, AsyncClient],
         themes: List[str],
-        concurrency: int = 5
+        concurrency: int = 5,
+        pass_number: int = 1
     ) -> List[SVGResult]:
         """Generate SVGs for all models and themes with rate limiting."""
         semaphore = asyncio.Semaphore(concurrency)
@@ -281,7 +285,7 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
                 model_client = model_clients[model_name]
                 results = []
                 for theme in themes:
-                    result = await self.generate_svg(model_client, theme, model_name)
+                    result = await self.generate_svg(model_client, theme, model_name, pass_number=pass_number)
                     results.append(result)
                 return results
 

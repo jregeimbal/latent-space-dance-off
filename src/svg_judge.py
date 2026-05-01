@@ -231,7 +231,7 @@ Respond with ONLY the JSON."""
 
         for model_name in model_clients:
             for svg_result in svg_list:
-                svg_id = f"{svg_result.model_name}_{svg_result.theme}"
+                svg_id = f"{svg_result.model_name}_{svg_result.theme}_pass{svg_result.pass_number}"
                 for judge_idx in [1]:
                     if progress and judge_task is not None:
                         progress.update(judge_task, description=f"Judging {svg_id} with {model_name}")
@@ -255,7 +255,7 @@ Respond with ONLY the JSON."""
         aggregated = {}
         for svg_result in svg_results:
             model_name = svg_result.model_name
-            svg_id = f"{model_name}_{svg_result.theme}"
+            svg_id = f"{model_name}_{svg_result.theme}_pass{svg_result.pass_number}"
             svg_judgments = [j for j in judgments if j.svg_id == svg_id]
             if not svg_judgments:
                 continue

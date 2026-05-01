@@ -261,7 +261,7 @@ class TestGenerateSvg:
         assert "svg" in result.svg_code.lower()
         assert result.svg_path is not None
         assert result.error_message is None
-        assert result.svg_path.endswith("run-1_llama3_abstract.svg")
+        assert result.svg_path.endswith("run-1_llama3_abstract_pass1.svg")
         assert result.tokens_used == 50
         assert mock_client.generate.call_count == 2
 

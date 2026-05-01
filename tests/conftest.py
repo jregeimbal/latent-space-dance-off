@@ -21,6 +21,7 @@ def mock_config():
     config.DEFAULT_COMPLEXITY_WEIGHT = 0.34
     config.JUDGING_CRITERIA = "creativity,aesthetics,complexity"
     config.DISABLE_JUDGING = False
+    config.NUM_PASSES = 1
     config.models = ["model_a", "model_b"]
     config.judging_criteria = ["creativity", "aesthetics", "complexity"]
     config.svgs_dir = Path("./output/svgs")
@@ -50,6 +51,7 @@ def temp_output_dir(tmp_path):
     config.DEFAULT_COMPLEXITY_WEIGHT = 0.34
     config.JUDGING_CRITERIA = "creativity,aesthetics,complexity"
     config.DISABLE_JUDGING = False
+    config.NUM_PASSES = 1
     config.models = ["model_a", "model_b"]
     config.judging_criteria = ["creativity", "aesthetics", "complexity"]
     config.svgs_dir = svgs_dir
