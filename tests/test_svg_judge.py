@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from pydantic import ValidationError
 
+from src.llm_client import LLMChunk
 from src.svg_judge import Comparison, Judgment, SVGJudge
 
 from tests.conftest import _run_async
@@ -143,8 +144,9 @@ class TestJudgeSvg:
     def test_happy_path(self, mock_config):
         judge = SVGJudge(mock_config)
         mock_client = AsyncMock()
-        mock_response = Mock()
-        mock_response.response = '{"creativity_score": 8, "aesthetics_score": 7, "complexity_score": 6, "reason": "good work"}'
+        mock_response = LLMChunk(
+            response='{"creativity_score": 8, "aesthetics_score": 7, "complexity_score": 6, "reason": "good work"}'
+        )
         mock_client.generate = AsyncMock(return_value=mock_response)
 
         svg_path = Path("/tmp/test.svg")
@@ -225,11 +227,12 @@ class TestRunAllJudgments:
             MockSVGResult("model_b", "landscape"),
         ]
 
+        mock_response = LLMChunk(
+            response='{"creativity_score": 7, "aesthetics_score": 8, "complexity_score": 9, "reason": "nice"}'
+        )
         mock_client_a = AsyncMock()
-        mock_client_b = AsyncMock()
-        mock_response = Mock()
-        mock_response.response = '{"creativity_score": 7, "aesthetics_score": 8, "complexity_score": 9, "reason": "nice"}'
         mock_client_a.generate = AsyncMock(return_value=mock_response)
+        mock_client_b = AsyncMock()
         mock_client_b.generate = AsyncMock(return_value=mock_response)
 
         model_clients = {"model_a": mock_client_a, "model_b": mock_client_b}

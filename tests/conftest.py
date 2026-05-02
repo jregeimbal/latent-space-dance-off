@@ -9,9 +9,11 @@ import pytest
 
 @pytest.fixture
 def mock_config():
-    """Provide a minimal Config-like mock object for tests that don’t need real env vars."""
+    """Provide a minimal Config-like mock object for tests that don't need real env vars."""
     config = Mock()
     config.OLLAMA_HOST = "http://localhost:11434"
+    config.LLM_CLIENT = "ollama"
+    config.LLM_HOST = ""
     config.NUM_JUDGES = 3
     config.OUTPUT_DIR = "./output"
     config.MODEL_LIST = ""
@@ -42,6 +44,8 @@ def temp_output_dir(tmp_path):
 
     config = Mock()
     config.OLLAMA_HOST = "http://localhost:11434"
+    config.LLM_CLIENT = "ollama"
+    config.LLM_HOST = ""
     config.NUM_JUDGES = 3
     config.OUTPUT_DIR = str(tmp_path)
     config.MODEL_LIST = ""

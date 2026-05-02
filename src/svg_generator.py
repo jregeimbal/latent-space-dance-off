@@ -12,8 +12,9 @@ from typing import Dict, List, Optional, Tuple
 
 from typing import Callable, Optional
 
-from ollama import AsyncClient
 from pydantic import BaseModel, Field
+
+from src.llm_client import BaseLLMClient
 from rich.console import Console
 
 console = Console()
@@ -184,7 +185,7 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
 
         return text[start:end + 6]
 
-    async def generate_svg(self, model_client: AsyncClient, theme: str, model_name: str, run_id: Optional[str] = None, progress_callback: Optional[Callable[[str], None]] = None, pass_number: int = 1) -> SVGResult:
+    async def generate_svg(self, model_client: BaseLLMClient, theme: str, model_name: str, run_id: Optional[str] = None, progress_callback: Optional[Callable[[str], None]] = None, pass_number: int = 1) -> SVGResult:
         """Generate SVG by calling the model."""
         start_time = time.perf_counter()
         full_streamed_text = ""
@@ -205,10 +206,18 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
              )
 
             last_chunk = None
+            tokens_evaluated = None
+            prompt_tokens_evaluated = None
             async for chunk in response:
                 chunk_text = getattr(chunk, 'response', '') or ''
                 full_streamed_text += chunk_text
                 last_chunk = chunk
+                eval_count = getattr(chunk, 'eval_count', None)
+                if eval_count is not None:
+                    tokens_evaluated = eval_count
+                prompt_eval_count = getattr(chunk, 'prompt_eval_count', None)
+                if prompt_eval_count is not None:
+                    prompt_tokens_evaluated = prompt_eval_count
                 if progress_callback and chunk_text:
                     cleaned = re.sub(r'[\x00-\x1f\x7f]', '', chunk_text)
                     if cleaned:
@@ -216,8 +225,6 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
 
             duration_ms = (time.perf_counter() - start_time) * 1000
             svg_output = last_chunk and getattr(last_chunk, 'response', None) or full_streamed_text
-            tokens_evaluated = last_chunk and getattr(last_chunk, 'eval_count', None)
-            prompt_tokens_evaluated = getattr(last_chunk, 'prompt_eval_count', None) if last_chunk else None
             tokens = svg_output
             
              # Extract SVG
@@ -272,7 +279,7 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
 
     async def generate_multiple_svgs(
         self,
-        model_clients: Dict[str, AsyncClient],
+        model_clients: Dict[str, BaseLLMClient],
         themes: List[str],
         concurrency: int = 5,
         pass_number: int = 1

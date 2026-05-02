@@ -16,7 +16,15 @@ class Config(BaseModel):
 
     OLLAMA_HOST: str = Field(
         default="http://localhost:11434",
-        description="Ollama API host URL"
+        description="Ollama API host URL (legacy, kept for backward compatibility)"
+    )
+    LLM_CLIENT: str = Field(
+        default="ollama",
+        description="LLM client type: ollama or lmstudio"
+    )
+    LLM_HOST: str = Field(
+        default="http://localhost:11434",
+        description="LLM server host URL (defaults to OLLAMA_HOST if not set)"
     )
     NUM_JUDGES: int = Field(
         default=3,
@@ -72,6 +80,16 @@ class Config(BaseModel):
     )
 
     model_config = ConfigDict()
+
+    @property
+    def llm_host(self) -> str:
+        """Get the effective LLM host URL.
+
+        Returns LLM_HOST if set, otherwise falls back to OLLAMA_HOST.
+        """
+        if self.LLM_HOST:
+            return self.LLM_HOST
+        return self.OLLAMA_HOST
 
     @field_validator('MODEL_LIST')
     @classmethod
@@ -134,6 +152,8 @@ class Config(BaseModel):
         return (
             f"Config(\n"
             f"  OLLAMA_HOST: {self.OLLAMA_HOST},\n"
+            f"  LLM_CLIENT: {self.LLM_CLIENT},\n"
+            f"  LLM_HOST: {self.LLM_HOST},\n"
             f"  NUM_JUDGES: {self.NUM_JUDGES},\n"
             f"  OUTPUT_DIR: {self.OUTPUT_DIR},\n"
             f"  NUM_THEMES: {self.NUM_THEMES},\n"

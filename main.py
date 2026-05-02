@@ -1,7 +1,7 @@
 """
 Main CLI entry point for latent-space-dance-off.
 
-A CLI application to benchmark Ollama LLM models by having them generate SVG images
+A CLI application to benchmark LLM models by having them generate SVG images
 and judge each other's work.
 """
 
@@ -29,24 +29,33 @@ from src.utils import format_duration
 
 app = typer.Typer(
     name="latent-space-dance-off",
-    help="Benchmark Ollama LLM models by having them create and judge SVG art.",
+    help="Benchmark LLM models by having them create and judge SVG art.",
     add_completion=False
 )
 
 console = Console()
 
 
-def get_config(ollama_host: str = "http://localhost:11434", output_dir: str = "./output", 
-                 num_judges: int = 3, model_list: str = "", judging_criteria: str = "",
-                 disable_judging: bool = False):
+def get_config(
+    ollama_host: str = "http://localhost:11434",
+    output_dir: str = "./output",
+    num_judges: int = 3,
+    model_list: str = "",
+    judging_criteria: str = "",
+    disable_judging: bool = False,
+    client_type: str = "ollama",
+    llm_host: str = "",
+):
     config = Config(
         OLLAMA_HOST=ollama_host,
         OUTPUT_DIR=output_dir,
         NUM_JUDGES=num_judges,
         MODEL_LIST=model_list,
         JUDGING_CRITERIA=judging_criteria,
-        DISABLE_JUDGING=disable_judging
-         )
+        DISABLE_JUDGING=disable_judging,
+        LLM_CLIENT=client_type,
+        LLM_HOST=llm_host,
+    )
     return config
 
 
@@ -57,8 +66,11 @@ def parse_models(models_str: str) -> List[str]:
 
 
 @app.command()
-def list_models(ollama_host: str = typer.Option("http://localhost:11434", "--ollama-host", "-h")):
-    manager = ModelManager(host=ollama_host)
+def list_models(
+    ollama_host: str = typer.Option("http://localhost:11434", "--ollama-host", "-h"),
+    client_type: str = typer.Option("ollama", "--client-type", "-c", help="LLM client type (ollama or lmstudio)"),
+):
+    manager = ModelManager(host=ollama_host, client_type=client_type)
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
@@ -68,7 +80,7 @@ def list_models(ollama_host: str = typer.Option("http://localhost:11434", "--oll
 
     if not models:
         console.print(Panel(
-              "[red]No models found. Run 'ollama pull <model>' to add models.[/red]",
+              "[red]No models found. Pull a model to your LLM server to add models.[/red]",
             title="No Models Available"
           ))
         return
@@ -97,11 +109,13 @@ async def _run_impl(
     judging_criteria: str = "creativity,aesthetics,complexity",
     disable_judging: bool = False,
     num_passes: int = 1,
+    client_type: str = "ollama",
+    llm_host: str = "",
 ):
     theme_list = [t.strip() for t in themes.split(",")]
-    config = get_config(ollama_host, output_dir, num_judges, models or "", judging_criteria, disable_judging)
+    config = get_config(ollama_host, output_dir, num_judges, models or "", judging_criteria, disable_judging, client_type, llm_host)
     
-    model_manager = ModelManager(host=ollama_host)
+    model_manager = ModelManager(host=config.llm_host, client_type=config.LLM_CLIENT)
     benchmark_manager = BenchmarkManager(config)
     ranking_system = RankingSystem(config)
     svg_judge = SVGJudge(config)
@@ -360,11 +374,13 @@ def run(
     num_judges: int = typer.Option(3, "--judges", "-j"),
     output_dir: str = typer.Option("./output", "--output", "-o"),
     ollama_host: str = typer.Option("http://localhost:11434", "--ollama-host", "--host"),
+    client_type: str = typer.Option("ollama", "--client-type", help="LLM client type (ollama or lmstudio)"),
+    llm_host: str = typer.Option("", "--llm-host", help="LLM server host URL (defaults to --ollama-host)"),
     judging_criteria: str = typer.Option("creativity,aesthetics,complexity", "--criteria", "-c", help="Comma-separated list of judging criteria"),
     no_judging: bool = typer.Option(False, "--no-judging", help="Skip the judging phase entirely"),
     num_passes: int = typer.Option(1, "--passes", "-p", help="Number of SVG passes per model per theme"),
 ):
-    asyncio.run(_run_impl(models, themes, num_judges, output_dir, ollama_host, judging_criteria, no_judging, num_passes))
+    asyncio.run(_run_impl(models, themes, num_judges, output_dir, ollama_host, judging_criteria, no_judging, num_passes, client_type, llm_host))
 
 
 @app.command()
