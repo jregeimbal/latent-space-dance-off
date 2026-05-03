@@ -20,6 +20,7 @@ generate_svg_prompt = _utils.generate_svg_prompt
 format_duration = _utils.format_duration
 write_svg = _utils.write_svg
 calculate_tokens_per_second = _utils.calculate_tokens_per_second
+svg_to_ascii = _utils.svg_to_ascii
 
 
 # parse_svg_from_response tests
@@ -181,3 +182,70 @@ class TestCalculateTokensPerSecond:
     def test_negative_duration_returns_zero(self):
         result = calculate_tokens_per_second(100, -500)
         assert result == 0.0
+
+
+# svg_to_ascii tests
+
+class TestSvgToAscii:
+    def test_empty_svg(self):
+        result = svg_to_ascii("")
+        assert result == "[empty SVG]"
+
+    def test_whitespace_only_svg(self):
+        result = svg_to_ascii("   \n  ")
+        assert result == "[empty SVG]"
+
+    def test_simple_rect(self):
+        svg = "<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='black'/></svg>"
+        result = svg_to_ascii(svg, width=20)
+        lines = result.split("\n")
+        assert len(lines) > 0
+        # img2ascii uses its own character set
+        for line in lines:
+            assert len(line) == 20
+
+    def test_simple_circle(self):
+        svg = "<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><circle cx='50' cy='50' r='40' fill='white'/></svg>"
+        result = svg_to_ascii(svg, width=20)
+        lines = result.split("\n")
+        assert len(lines) > 0
+
+    def test_custom_width(self):
+        svg = "<svg xmlns='http://www.w3.org/2000/svg' width='200' height='100'><rect width='200' height='100' fill='black'/></svg>"
+        result = svg_to_ascii(svg, width=40)
+        lines = result.split("\n")
+        assert len(lines) > 0
+        for line in lines:
+            assert len(line) == 40
+
+    def test_default_width_120(self):
+        svg = "<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='gray'/></svg>"
+        result = svg_to_ascii(svg)
+        lines = result.split("\n")
+        assert len(lines) > 0
+        for line in lines:
+            assert len(line) == 120
+
+    def test_gradient_svg(self):
+        svg = """<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'>
+            <defs>
+                <linearGradient id='g1' x1='0%' y1='0%' x2='100%' y2='100%'>
+                    <stop offset='0%' stop-color='#ff0000'/>
+                    <stop offset='100%' stop-color='#0000ff'/>
+                </linearGradient>
+            </defs>
+            <rect width='200' height='200' fill='url(#g1)'/>
+        </svg>"""
+        result = svg_to_ascii(svg, width=30)
+        lines = result.split("\n")
+        assert len(lines) > 0
+
+    def test_multiple_shapes(self):
+        svg = """<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'>
+            <rect x='10' y='10' width='80' height='80' fill='blue'/>
+            <circle cx='150' cy='50' r='30' fill='green'/>
+            <polygon points='50,150 100,100 150,150' fill='yellow'/>
+        </svg>"""
+        result = svg_to_ascii(svg, width=30)
+        lines = result.split("\n")
+        assert len(lines) > 0

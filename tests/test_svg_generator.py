@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from pydantic import ValidationError
 
+from src.llm_client import LLMChunk
 from src.svg_generator import SVGGenerator, SVGResult
 
 
@@ -74,13 +75,10 @@ class TestPromptGenerators:
     def test_generate_abstract_svg_prompt(self, generator):
         prompt = generator.generate_abstract_svg_prompt("llama3")
         assert "llama3" in prompt
-        # 5+ shapes referenced
         shape_keywords = ["rect", "circle", "ellipse", "polygon", "polyline", "path", "line"]
         found = [kw for kw in shape_keywords if kw in prompt]
         assert len(found) >= 5
-        # 3+ colors referenced
         assert "3 different colors" in prompt or "3 different colors or gradients" in prompt
-        # includes SVG indicator and response instruction
         assert "SVG" in prompt
         assert "Respond with ONLY" in prompt
 
@@ -88,7 +86,6 @@ class TestPromptGenerators:
         prompt = generator.generate_landscape_svg_prompt("llama3")
         assert "landscape" in prompt.lower()
         assert "llama3" in prompt
-        # scene references
         scene_words = ["sky", "mountain", "water", "tree", "cloud"]
         found = [w for w in scene_words if w in prompt.lower()]
         assert len(found) >= 3
@@ -163,7 +160,6 @@ class TestGetSvgPrompt:
 
     def test_unknown_theme_falls_back_to_generic(self, generator):
         prompt = generator._get_svg_prompt("nebula", "llama3")
-        # fallback uses generate_generic_svg_prompt which prefixes theme
         assert "nebula" in prompt
         assert "rect" in prompt
         assert "circle" in prompt
@@ -234,17 +230,18 @@ class TestGenerateSvg:
         return SVGGenerator(mock_config, svgs_dir=tmp_path / "svgs")
 
     def test_success_path(self, generator):
-        mock_client = AsyncMock()
-        mock_response = Mock()
-        mock_response.response = '<svg width="100"><circle/></svg>'
-        mock_response.eval_count = 50
-        mock_response.prompt_eval_count = 200
-        mock_clear = Mock(response='ok', eval_count=10, prompt_eval_count=5)
+        mock_clear = LLMChunk(response="ok", eval_count=10, prompt_eval_count=5)
+        mock_response = LLMChunk(
+            response='<svg width="100"><circle/></svg>',
+            eval_count=50,
+            prompt_eval_count=200,
+        )
 
         async def make_iter(chunks):
             for c in chunks:
                 yield c
 
+        mock_client = AsyncMock()
         mock_client.generate.side_effect = [
             make_iter([mock_clear]),
             make_iter([mock_response]),
@@ -261,7 +258,7 @@ class TestGenerateSvg:
         assert "svg" in result.svg_code.lower()
         assert result.svg_path is not None
         assert result.error_message is None
-        assert result.svg_path.endswith("run-1_llama3_abstract.svg")
+        assert result.svg_path.endswith("run-1_llama3_abstract_pass1.svg")
         assert result.tokens_used == 50
         assert mock_client.generate.call_count == 2
 
@@ -326,23 +323,23 @@ class TestGenerateMultipleSvgs:
         return SVGGenerator(mock_config, svgs_dir=tmp_path / "svgs")
 
     def test_calls_generate_svg_for_each_model_x_theme(self, generator, tmp_path):
-        mock_client = AsyncMock()
-        mock_response = Mock()
-        mock_response.response = '<svg width="100"><circle/></svg>'
-        mock_response.eval_count = 30
-        mock_response.prompt_eval_count = 100
-        mock_clear = Mock(response='ok', eval_count=5, prompt_eval_count=2)
+        mock_clear = LLMChunk(response="ok", eval_count=5, prompt_eval_count=2)
+        mock_response = LLMChunk(
+            response='<svg width="100"><circle/></svg>',
+            eval_count=30,
+            prompt_eval_count=100,
+        )
 
         async def make_iter(chunks):
             for c in chunks:
                 yield c
 
-        # 4 calls * 2 generate() each = 8 total
         calls = []
         for _ in range(4):
             calls.append(make_iter([mock_clear]))
             calls.append(make_iter([mock_response]))
 
+        mock_client = AsyncMock()
         mock_client.generate.side_effect = calls
 
         model_clients = {"model_a": mock_client, "model_b": mock_client}
@@ -353,18 +350,14 @@ class TestGenerateMultipleSvgs:
 
         results = _run_async(_do())
 
-        # 2 models * 2 themes = 4 results
         assert len(results) == 4
 
-        # All should be successful
         for r in results:
             assert r.status == "success"
 
-        # Should cover both models and both themes
         models_seen = {r.model_name for r in results}
         themes_seen = {r.theme for r in results}
         assert models_seen == {"model_a", "model_b"}
         assert themes_seen == {"abstract", "landscape"}
 
-        # Should be flat list, not nested
         assert not any(isinstance(r, list) for r in results)

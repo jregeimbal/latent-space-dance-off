@@ -15,7 +15,9 @@ class TestGetConfig:
                 MODEL_LIST="",
                 JUDGING_CRITERIA="",
                 DISABLE_JUDGING=False,
-             )
+                LLM_CLIENT="ollama",
+                LLM_HOST="",
+            )
             assert result == MockConfig.return_value
 
     def test_overrides_ollama_host(self):

@@ -116,11 +116,26 @@ class RankingSystem:
         
         for judgment in judgments:
             svg_id = judgment.svg_id
-            if svg_id not in scores:
-                scores[svg_id] = SVGScore(svg_id=svg_id, model_name=judgment.svg_model_name, 
-                                                  scores={}, total_score=0.0, judgment_count=0)
+            model_name = judgment.svg_model_name
             
-            svg_score = scores[svg_id]
+            # Extract model name from svg_id (format: model_name_theme_passN)
+            # The svg_id format is: {model_name}_{theme}_pass{pass_number}
+            # We need to identify the model from the svg_id
+            # Since model names can contain underscores, we match against known models
+            resolved_model = None
+            for known_model in run_data.model_list:
+                if svg_id.startswith(f"{known_model}_"):
+                    resolved_model = known_model
+                    break
+            
+            if resolved_model is None:
+                resolved_model = model_name
+            
+            if resolved_model not in scores:
+                scores[resolved_model] = SVGScore(svg_id=resolved_model, model_name=resolved_model, 
+                                                      scores={}, total_score=0.0, judgment_count=0)
+            
+            svg_score = scores[resolved_model]
             
                # Handle both old format (individual scores) and new format (scores dict)
             if hasattr(judgment, 'scores') and judgment.scores:
@@ -175,7 +190,10 @@ class RankingSystem:
         model_scores = self.aggregate_all_judgments(run_data, run_data.judgments)
         rankings = self.calculate_final_ranking(model_scores)
         for entry in rankings:
-            entry.svg_files = []
+            # Collect all SVG files for this model across all passes
+            svg_files = [s.svg_path for s in run_data.svgs 
+                        if s.model_name == entry.model_name and s.svg_path]
+            entry.svg_files = svg_files
         return Leaderboard(
             run_id=run_data.run_id,
             timestamp=run_data.timestamp,

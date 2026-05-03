@@ -1,7 +1,7 @@
 """
 Main CLI entry point for latent-space-dance-off.
 
-A CLI application to benchmark Ollama LLM models by having them generate SVG images
+A CLI application to benchmark LLM models by having them generate SVG images
 and judge each other's work.
 """
 
@@ -25,28 +25,37 @@ from src.svg_judge import SVGJudge
 from src.ranking import RankingSystem, Leaderboard
 from src.benchmark import BenchmarkManager, BenchmarkRecord, RunData, SVGResult
 from src.html_generator import generate_benchmark_html
-from src.utils import format_duration
+from src.utils import format_duration, svg_to_ascii, make_clickable_link
 
 app = typer.Typer(
     name="latent-space-dance-off",
-    help="Benchmark Ollama LLM models by having them create and judge SVG art.",
+    help="Benchmark LLM models by having them create and judge SVG art.",
     add_completion=False
 )
 
 console = Console()
 
 
-def get_config(ollama_host: str = "http://localhost:11434", output_dir: str = "./output", 
-                 num_judges: int = 3, model_list: str = "", judging_criteria: str = "",
-                 disable_judging: bool = False):
+def get_config(
+    ollama_host: str = "http://localhost:11434",
+    output_dir: str = "./output",
+    num_judges: int = 3,
+    model_list: str = "",
+    judging_criteria: str = "",
+    disable_judging: bool = False,
+    client_type: str = "ollama",
+    llm_host: str = "",
+):
     config = Config(
         OLLAMA_HOST=ollama_host,
         OUTPUT_DIR=output_dir,
         NUM_JUDGES=num_judges,
         MODEL_LIST=model_list,
         JUDGING_CRITERIA=judging_criteria,
-        DISABLE_JUDGING=disable_judging
-         )
+        DISABLE_JUDGING=disable_judging,
+        LLM_CLIENT=client_type,
+        LLM_HOST=llm_host,
+    )
     return config
 
 
@@ -57,8 +66,11 @@ def parse_models(models_str: str) -> List[str]:
 
 
 @app.command()
-def list_models(ollama_host: str = typer.Option("http://localhost:11434", "--ollama-host", "-h")):
-    manager = ModelManager(host=ollama_host)
+def list_models(
+    ollama_host: str = typer.Option("http://localhost:11434", "--ollama-host", "-h"),
+    client_type: str = typer.Option("ollama", "--client-type", "-c", help="LLM client type (ollama or lmstudio)"),
+):
+    manager = ModelManager(host=ollama_host, client_type=client_type)
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
@@ -68,7 +80,7 @@ def list_models(ollama_host: str = typer.Option("http://localhost:11434", "--oll
 
     if not models:
         console.print(Panel(
-              "[red]No models found. Run 'ollama pull <model>' to add models.[/red]",
+              "[red]No models found. Pull a model to your LLM server to add models.[/red]",
             title="No Models Available"
           ))
         return
@@ -96,11 +108,14 @@ async def _run_impl(
     ollama_host: str,
     judging_criteria: str = "creativity,aesthetics,complexity",
     disable_judging: bool = False,
+    num_passes: int = 1,
+    client_type: str = "ollama",
+    llm_host: str = "",
 ):
     theme_list = [t.strip() for t in themes.split(",")]
-    config = get_config(ollama_host, output_dir, num_judges, models or "", judging_criteria, disable_judging)
+    config = get_config(ollama_host, output_dir, num_judges, models or "", judging_criteria, disable_judging, client_type, llm_host)
     
-    model_manager = ModelManager(host=ollama_host)
+    model_manager = ModelManager(host=config.llm_host, client_type=config.LLM_CLIENT)
     benchmark_manager = BenchmarkManager(config)
     ranking_system = RankingSystem(config)
     svg_judge = SVGJudge(config)
@@ -119,6 +134,7 @@ async def _run_impl(
         f"Models: {', '.join(model_list)}",
         f"Themes: {', '.join(theme_list)}",
         f"Judges: {'None' if disable_judging else num_judges}",
+        f"Passes: {num_passes}",
         f"Output: {output_dir}"
        ]
     console.print(Panel("\n".join(info_lines),
@@ -148,7 +164,7 @@ async def _run_impl(
     assets_dir = run_dir / "assets"
     svg_generator = SVGGenerator(config, svgs_dir=assets_dir)
     console.print(f"[yellow]Output directory: {run_dir}[/yellow]")
-    console.print(f"\n[cyan]Generating SVGs for {len(model_clients)} models x {len(theme_list)} themes...[/cyan]")
+    console.print(f"\n[cyan]Generating SVGs for {len(model_clients)} models x {len(theme_list)} themes x {num_passes} passes...[/cyan]")
 
     with Progress(
         SpinnerColumn(),
@@ -156,7 +172,7 @@ async def _run_impl(
         BarColumn(),
         TaskProgressColumn(),
        ) as progress:
-        svg_task = progress.add_task("Generating SVGs...", total=len(model_clients) * len(theme_list))
+        svg_task = progress.add_task("Generating SVGs...", total=len(model_clients) * len(theme_list) * num_passes)
 
         svg_results = []
         streamed_text = ""
@@ -167,18 +183,19 @@ async def _run_impl(
             last_20 = streamed_text[-20:]
             elapsed = time.perf_counter() - generation_start
             elapsed_str = f"{elapsed:.1f}s"
-            progress.update(svg_task, description=f"Generating {model_name} ({theme}) | {elapsed_str} | {last_20}")
+            progress.update(svg_task, description=f"Generating {model_name} ({theme}, pass {pass_num}) | {elapsed_str} | {last_20}")
 
         for model_name in model_clients:
             for theme in theme_list:
-                streamed_text = ""
-                generation_start = time.perf_counter()
-                progress.update(svg_task, description=f"Generating {model_name} ({theme}) | 0.0s | Thinking...")
-                result = await svg_generator.generate_svg(model_clients[model_name], theme, model_name, run_id, progress_callback=update_progress)
-                svg_results.append(result)
-                final_elapsed = time.perf_counter() - generation_start
-                progress.update(svg_task, description=f"Generating {model_name} ({theme}) | Done ({final_elapsed:.1f}s)")
-                progress.update(svg_task, advance=1)
+                for pass_num in range(1, num_passes + 1):
+                    streamed_text = ""
+                    generation_start = time.perf_counter()
+                    progress.update(svg_task, description=f"Generating {model_name} ({theme}, pass {pass_num}) | 0.0s | Thinking...")
+                    result = await svg_generator.generate_svg(model_clients[model_name], theme, model_name, run_id, progress_callback=update_progress, pass_number=pass_num)
+                    svg_results.append(result)
+                    final_elapsed = time.perf_counter() - generation_start
+                    progress.update(svg_task, description=f"Generating {model_name} ({theme}, pass {pass_num}) | Done ({final_elapsed:.1f}s)")
+                    progress.update(svg_task, advance=1)
 
     console.print("\n[cyan]Benchmark Results[/cyan]")
     console.print(Panel.fit("[bold]Generation Results[/bold]"))
@@ -193,7 +210,11 @@ async def _run_impl(
         console.print(f"  Status: {result.status}")
         console.print(f"  Duration: {duration_str}")
         console.print(f"  Tokens: {tokens_str} ({tps:.2f} tokens/sec)")
-        console.print(f"  File: {result.svg_path}")
+        console.print(f"  File: {make_clickable_link(result.svg_path)}", markup=False, highlight=False)
+        if result.status == "success" and result.svg_code:
+            ascii_art = svg_to_ascii(result.svg_code, width=100, use_ansi=True)
+            import sys
+            sys.stdout.write(ascii_art + "\n")
 
     run_data = RunData(
         run_id=run_id,
@@ -207,7 +228,8 @@ async def _run_impl(
             tokens_used=int(r.tokens_used) if r.tokens_used else None,
             status=r.status,
             error_message=r.error_message,
-            generation_prompt=r.generation_prompt
+            generation_prompt=r.generation_prompt,
+            pass_number=r.pass_number
             ) for r in svg_results],
         benchmarks=[BenchmarkRecord(
             run_id=run_id,
@@ -243,7 +265,7 @@ async def _run_impl(
             aggregated = svg_judge.aggregate_judgments(svg_results, judgments)
 
         benchmark_manager.save_run_data(run_data)
-        console.print(f"\n[yellow]Benchmark data saved to: {run_dir}/benchmark.json[/yellow]")
+        sys.stdout.write(f"\n[yellow]Benchmark data saved to: {make_clickable_link(run_dir / 'benchmark.json')}[/yellow]\n")
         
           # Generate HTML report
         html_path = run_dir / "benchmark_report.html"
@@ -253,7 +275,7 @@ async def _run_impl(
               "svgs": [{"model_name": s.model_name, "theme": s.theme,
                         "svg_code": s.svg_code, "svg_path": s.svg_path,
                         "duration_ms": s.duration_ms, "tokens_used": s.tokens_used,
-                        "status": s.status} for s in run_data.svgs],
+                        "status": s.status, "pass_number": s.pass_number} for s in run_data.svgs],
                "model_list": run_data.model_list,
                "themes": run_data.themes,
                "judgments": [],
@@ -280,7 +302,7 @@ async def _run_impl(
                     "judge_prompt": getattr(j, 'judge_prompt', None)
                })
         generate_benchmark_html(run_data_dict, html_path)
-        console.print(f"[yellow]HTML report saved to: {html_path}[/yellow]")
+        sys.stdout.write(f"[yellow]HTML report saved to: {make_clickable_link(html_path)}[/yellow]\n")
         
         leaderboard = ranking_system.generate_leaderboard(run_data)
         leaderboard_path = ranking_system.save_leaderboard(leaderboard, run_dir=run_dir)
@@ -319,11 +341,11 @@ async def _run_impl(
                 entry.svg_id,
                    *score_values                  )
         console.print(table)
-        console.print(f"\n[yellow]Leaderboard saved to: {leaderboard_path}[/yellow]")
+        sys.stdout.write(f"\nLeaderboard saved to: {make_clickable_link(leaderboard_path)}\n")
     elif svg_results and disable_judging:
         
         benchmark_manager.save_run_data(run_data)
-        console.print(f"\n[yellow]Benchmark data saved to: {run_dir}/benchmark.json[/yellow]")
+        sys.stdout.write(f"\nBenchmark data saved to: {make_clickable_link(run_dir / 'benchmark.json')}\n")
         
           # Generate HTML report without judging data
         html_path = run_dir / "benchmark_report.html"
@@ -333,14 +355,14 @@ async def _run_impl(
               "svgs": [{"model_name": s.model_name, "theme": s.theme,
                         "svg_code": s.svg_code, "svg_path": s.svg_path,
                         "duration_ms": s.duration_ms, "tokens_used": s.tokens_used,
-                        "status": s.status} for s in run_data.svgs],
+                        "status": s.status, "pass_number": s.pass_number} for s in run_data.svgs],
                "model_list": run_data.model_list,
                "themes": run_data.themes,
                "judgments": [],
-               "criteria": config.judging_criteria
-            }
+                "criteria": config.judging_criteria
+             }
         generate_benchmark_html(run_data_dict, html_path)
-        console.print(f"[yellow]HTML report saved to: {html_path}[/yellow]")
+        sys.stdout.write(f"HTML report saved to: {make_clickable_link(html_path)}\n")
         
         console.print("[yellow]Judging was disabled. No judge output or leaderboard generated.[/yellow]")
     else:
@@ -356,10 +378,13 @@ def run(
     num_judges: int = typer.Option(3, "--judges", "-j"),
     output_dir: str = typer.Option("./output", "--output", "-o"),
     ollama_host: str = typer.Option("http://localhost:11434", "--ollama-host", "--host"),
+    client_type: str = typer.Option("ollama", "--client-type", help="LLM client type (ollama or lmstudio)"),
+    llm_host: str = typer.Option("", "--llm-host", help="LLM server host URL (defaults to --ollama-host)"),
     judging_criteria: str = typer.Option("creativity,aesthetics,complexity", "--criteria", "-c", help="Comma-separated list of judging criteria"),
     no_judging: bool = typer.Option(False, "--no-judging", help="Skip the judging phase entirely"),
+    num_passes: int = typer.Option(1, "--passes", "-p", help="Number of SVG passes per model per theme"),
 ):
-    asyncio.run(_run_impl(models, themes, num_judges, output_dir, ollama_host, judging_criteria, no_judging))
+    asyncio.run(_run_impl(models, themes, num_judges, output_dir, ollama_host, judging_criteria, no_judging, num_passes, client_type, llm_host))
 
 
 @app.command()
@@ -406,7 +431,7 @@ def leaderboard(
 
         console.print(table)
         csv_path = ranking_system.export_to_csv(leaderboard_obj)
-        console.print(f"\n[yellow]Saved CSV: {csv_path}[/yellow]")
+        sys.stdout.write(f"\n[yellow]Saved CSV: {make_clickable_link(csv_path)}[/yellow]\n")
 
     except FileNotFoundError as e:
         console.print(f"[red]Leaderboard not found: {e}[/red]")
@@ -435,10 +460,10 @@ def export(
 
         if format == "csv":
             filepath = ranking_system.export_to_csv(leaderboard_obj)
-            console.print(f"[green]Exported to CSV: {filepath}[/green]")
+            sys.stdout.write(f"[green]Exported to CSV: {make_clickable_link(filepath)}[/green]\n")
         elif format == "json":
             filepath = ranking_system.save_leaderboard(leaderboard_obj)
-            console.print(f"[green]Exported to JSON: {filepath}[/green]")
+            sys.stdout.write(f"[green]Exported to JSON: {make_clickable_link(filepath)}[/green]\n")
 
     except FileNotFoundError as e:
         console.print(f"[red]Leaderboard not found: {e}[/red]")

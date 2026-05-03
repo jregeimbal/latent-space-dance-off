@@ -8,7 +8,8 @@ from src.html_generator import (
     _build_error_cell,
     _build_html,
     _build_row_html,
-    _build_success_cell,
+    _build_success_cells,
+    _build_pass_selector_cell,
     _render_judge_prompts,
     calculate_tokens_per_second,
     format_duration,
@@ -137,56 +138,113 @@ class TestRenderJudgePrompts:
         assert "Prompt two" in result
 
 
-# --- _build_success_cell ---
+# --- _build_pass_selector_cell ---
 
 
-class TestBuildSuccessCell:
+class TestBuildPassSelectorCell:
 
     def test_renders_model_name_score_duration_tokens_tps(self):
-        svg_code = '<svg><circle/></svg>'
-        result = _build_success_cell(
+        pass_options = [{
+            "pass_number": 1,
+            "svg_code": '<svg><circle/></svg>',
+            "duration_ms": 2000,
+            "tokens": 400,
+            "tps": 200.0,
+            "svg_path": "/path/to/svg.svg",
+            "avg_score": 8.50,
+            "judgments": [],
+        }]
+        result = _build_pass_selector_cell(
             model="model_a",
             theme="abstract",
-            svg_code=svg_code,
-            duration_ms=2000,
-            tokens=400,
-            tps=200.0,
-            svg_path="/path/to/svg.svg",
-            avg_score=8.50,
+            pass_options=pass_options,
         )
         assert "model_a" in result
-        assert svg_code in result
+        assert '<svg><circle/></svg>' in result
         assert "2.00s" in result
         assert "400" in result
         assert "200.0" in result
+        assert "Pass 1" in result
+        assert 'class="pass-dropdown"' in result
 
     def test_no_avg_score_no_score_str(self):
-        svg_code = '<svg><circle/></svg>'
-        result = _build_success_cell(
+        pass_options = [{
+            "pass_number": 1,
+            "svg_code": '<svg><circle/></svg>',
+            "duration_ms": 0,
+            "tokens": None,
+            "tps": 0.0,
+            "svg_path": "",
+            "avg_score": None,
+            "judgments": [],
+        }]
+        result = _build_pass_selector_cell(
             model="model_a",
             theme="abstract",
-            svg_code=svg_code,
-            duration_ms=0,
-            tokens=None,
-            tps=0.0,
-            svg_path="",
-            avg_score=None,
+            pass_options=pass_options,
         )
         assert 'class="cell-score"' not in result
 
     def test_svg_code_embedded(self):
-        svg_code = '<svg id="test-svg"><circle/></svg>'
-        result = _build_success_cell(
+        pass_options = [{
+            "pass_number": 1,
+            "svg_code": '<svg id="test-svg"><circle/></svg>',
+            "duration_ms": 0,
+            "tokens": 100,
+            "tps": 100.0,
+            "svg_path": "",
+            "avg_score": None,
+            "judgments": [],
+        }]
+        result = _build_pass_selector_cell(
             model="model_a",
             theme="abstract",
-            svg_code=svg_code,
-            duration_ms=0,
-            tokens=100,
-            tps=100.0,
-            svg_path="",
-            avg_score=None,
+            pass_options=pass_options,
         )
-        assert svg_code in result
+        assert '<svg id="test-svg"><circle/></svg>' in result
+
+    def test_multiple_passes_shows_dropdown(self):
+        pass_options = [
+            {
+                "pass_number": 1,
+                "svg_code": '<svg id="p1"/></svg>',
+                "duration_ms": 1000,
+                "tokens": 100,
+                "tps": 100.0,
+                "svg_path": "/p1.svg",
+                "avg_score": 7.0,
+                "judgments": [],
+            },
+            {
+                "pass_number": 2,
+                "svg_code": '<svg id="p2"/></svg>',
+                "duration_ms": 2000,
+                "tokens": 200,
+                "tps": 100.0,
+                "svg_path": "/p2.svg",
+                "avg_score": 8.0,
+                "judgments": [],
+            },
+        ]
+        result = _build_pass_selector_cell(
+            model="model_a",
+            theme="abstract",
+            pass_options=pass_options,
+        )
+        assert '<option value="1"' in result
+        assert '<option value="2"' in result
+        assert 'selected' in result
+        assert '<svg id="p1"/>' in result
+        assert '<svg id="p2"/>' in result
+        assert 'data-pass="1"' in result
+        assert 'data-pass="2"' in result
+        assert 'class="pass-dropdown"' in result
+        assert 'class="pass-selector"' in result
+        # First pass should be visible (no display:none), second hidden
+        first_pass_idx = result.index('data-pass="1"')
+        second_pass_idx = result.index('data-pass="2"')
+        assert result[first_pass_idx:first_pass_idx+100].find('display') == -1 or result[first_pass_idx:first_pass_idx+100].find("display: ''") != -1
+        assert 'display: none' in result[second_pass_idx:]
 
 
 # --- _build_error_cell ---
@@ -211,17 +269,17 @@ class TestBuildRowHtml:
 
     def test_includes_theme_label_and_cells(self):
         svg_lookup = {
-            ("model_a", "abstract"): {
+            ("model_a", "abstract"): [{
                 "status": "success",
                 "svg_code": '<svg><circle/></svg>',
                 "duration_ms": 1000,
                 "tokens_used": 100,
                 "svg_path": "/a.svg",
-            },
-            ("model_b", "abstract"): {
+            }],
+            ("model_b", "abstract"): [{
                 "status": "failed",
                 "error_message": "Error",
-            },
+            }],
         }
         result = _build_row_html("abstract", ["model_a", "model_b"], svg_lookup, {})
         assert "abstract" in result
@@ -230,17 +288,17 @@ class TestBuildRowHtml:
 
     def test_includes_both_success_and_error_cells(self):
         svg_lookup = {
-            ("model_a", "abstract"): {
+            ("model_a", "abstract"): [{
                 "status": "success",
                 "svg_code": '<svg><circle/></svg>',
                 "duration_ms": 1000,
                 "tokens_used": 100,
                 "svg_path": "",
-            },
-            ("model_b", "abstract"): {
+            }],
+            ("model_b", "abstract"): [{
                 "status": "failed",
                 "error_message": "Some error",
-            },
+            }],
         }
         result = _build_row_html("abstract", ["model_a", "model_b"], svg_lookup, {})
         assert "cell" in result
@@ -441,3 +499,211 @@ class TestGenerateReportFromFile:
 
         assert Path(result).exists()
         assert str(out_dir) in result
+
+
+# --- Multi-pass tests ---
+
+
+class TestMultiPass:
+
+    def test_build_success_cells_multiple_passes(self):
+        svg_list = [
+            {
+                "status": "success",
+                "svg_code": '<svg id="pass1"><circle/></svg>',
+                "duration_ms": 1000,
+                "tokens_used": 100,
+                "svg_path": "/pass1.svg",
+                "pass_number": 1,
+            },
+            {
+                "status": "success",
+                "svg_code": '<svg id="pass2"><rect/></svg>',
+                "duration_ms": 1500,
+                "tokens_used": 120,
+                "svg_path": "/pass2.svg",
+                "pass_number": 2,
+            },
+        ]
+        result = _build_success_cells("model_a", "abstract", svg_list, {})
+        assert '<svg id="pass1">' in result
+        assert '<svg id="pass2">' in result
+        assert "Pass 1" in result
+        assert "Pass 2" in result
+        assert 'class="pass-dropdown"' in result
+        assert "1.00s" in result
+        assert "1.50s" in result
+
+    def test_build_row_html_multiple_passes(self):
+        svg_lookup = {
+            ("model_a", "abstract"): [
+                {
+                    "status": "success",
+                    "svg_code": '<svg><circle/></svg>',
+                    "duration_ms": 1000,
+                    "tokens_used": 100,
+                    "svg_path": "/a1.svg",
+                    "pass_number": 1,
+                },
+                {
+                    "status": "success",
+                    "svg_code": '<svg><rect/></svg>',
+                    "duration_ms": 2000,
+                    "tokens_used": 200,
+                    "svg_path": "/a2.svg",
+                    "pass_number": 2,
+                },
+            ],
+        }
+        result = _build_row_html("abstract", ["model_a"], svg_lookup, {})
+        assert '<svg><circle/></svg>' in result
+        assert '<svg><rect/></svg>' in result
+        assert "Pass 1" in result
+        assert "Pass 2" in result
+        assert 'class="pass-dropdown"' in result
+
+    def test_build_row_html_mixed_passes_success_and_fail(self):
+        svg_lookup = {
+            ("model_a", "abstract"): [
+                {
+                    "status": "success",
+                    "svg_code": '<svg><circle/></svg>',
+                    "duration_ms": 1000,
+                    "tokens_used": 100,
+                    "svg_path": "/a1.svg",
+                    "pass_number": 1,
+                },
+                {
+                    "status": "failed",
+                    "error_message": "timeout",
+                    "svg_path": None,
+                    "pass_number": 2,
+                },
+            ],
+        }
+        result = _build_row_html("abstract", ["model_a"], svg_lookup, {})
+        assert '<svg><circle/></svg>' in result
+        # Failed pass should not render as error cell since there's a success
+        assert 'class="cell failed"' not in result
+        # Only successful passes are rendered
+        assert '/a1.svg' in result
+
+    def test_build_row_html_all_passes_failed(self):
+        svg_lookup = {
+            ("model_a", "abstract"): [
+                {
+                    "status": "failed",
+                    "error_message": "timeout",
+                    "svg_path": None,
+                    "pass_number": 1,
+                },
+                {
+                    "status": "failed",
+                    "error_message": "error",
+                    "svg_path": None,
+                    "pass_number": 2,
+                },
+            ],
+        }
+        result = _build_row_html("abstract", ["model_a"], svg_lookup, {})
+        assert 'class="cell failed"' in result
+        assert "timeout" in result
+
+    def test_generate_benchmark_html_with_multiple_passes(self):
+        run_data_dict = {
+            "run_id": "run-1",
+            "timestamp": "2024-01-01",
+            "model_list": ["model_a"],
+            "themes": ["abstract"],
+            "svgs": [
+                {
+                    "model_name": "model_a",
+                    "theme": "abstract",
+                    "svg_code": '<svg id="p1"><circle/></svg>',
+                    "svg_path": "/p1.svg",
+                    "duration_ms": 1000,
+                    "tokens_used": 100,
+                    "status": "success",
+                    "pass_number": 1,
+                },
+                {
+                    "model_name": "model_a",
+                    "theme": "abstract",
+                    "svg_code": '<svg id="p2"><rect/></svg>',
+                    "svg_path": "/p2.svg",
+                    "duration_ms": 2000,
+                    "tokens_used": 200,
+                    "status": "success",
+                    "pass_number": 2,
+                },
+            ],
+            "judgments": [],
+            "criteria": ["creativity"],
+        }
+        result = generate_benchmark_html(run_data_dict, Path("/tmp/test_multi_pass.html"))
+        with open(result, "r") as f:
+            html = f.read()
+        assert '<svg id="p1">' in html
+        assert '<svg id="p2">' in html
+        assert "Pass 1" in html
+        assert "Pass 2" in html
+        assert 'class="pass-dropdown"' in html
+        assert "switchPass" in html
+
+    def test_generate_benchmark_html_with_judgments_multiple_passes(self):
+        run_data_dict = {
+            "run_id": "run-1",
+            "timestamp": "2024-01-01",
+            "model_list": ["model_a"],
+            "themes": ["abstract"],
+            "svgs": [
+                {
+                    "model_name": "model_a",
+                    "theme": "abstract",
+                    "svg_code": '<svg id="p1"><circle/></svg>',
+                    "svg_path": "/p1.svg",
+                    "duration_ms": 1000,
+                    "tokens_used": 100,
+                    "status": "success",
+                    "pass_number": 1,
+                },
+                {
+                    "model_name": "model_a",
+                    "theme": "abstract",
+                    "svg_code": '<svg id="p2"><rect/></svg>',
+                    "svg_path": "/p2.svg",
+                    "duration_ms": 2000,
+                    "tokens_used": 200,
+                    "status": "success",
+                    "pass_number": 2,
+                },
+            ],
+            "judgments": [
+                {
+                    "svg_id": "model_a_abstract_pass1",
+                    "judged_by": "judge_1",
+                    "scores": {"creativity": 8.0},
+                    "total_score": 8.0,
+                    "reason": "Good pass 1",
+                    "criteria_used": ["creativity"],
+                    "judge_prompt": None,
+                },
+                {
+                    "svg_id": "model_a_abstract_pass2",
+                    "judged_by": "judge_1",
+                    "scores": {"creativity": 9.0},
+                    "total_score": 9.0,
+                    "reason": "Good pass 2",
+                    "criteria_used": ["creativity"],
+                    "judge_prompt": None,
+                },
+            ],
+            "criteria": ["creativity"],
+        }
+        result = generate_benchmark_html(run_data_dict, Path("/tmp/test_multi_pass_judged.html"))
+        with open(result, "r") as f:
+            html = f.read()
+        assert "Good pass 1" in html
+        assert "Good pass 2" in html
+        assert "8.0" in html
+        assert "9.0" in html

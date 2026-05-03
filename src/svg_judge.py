@@ -12,8 +12,9 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from rich.progress import TaskID, Progress
 
-from ollama import AsyncClient
 from pydantic import BaseModel, Field
+
+from src.llm_client import BaseLLMClient
 from rich.console import Console
 
 console = Console()
@@ -50,7 +51,7 @@ class SVGJudge:
         self.config = config
         self.num_judges = config.NUM_JUDGES if hasattr(config, 'NUM_JUDGES') else 3
 
-    async def judge_svg(self, model_client: AsyncClient, svg_path: Path, svg_content: str, svg_id: str, model_name: str, judge_name: str, generation_prompt: Optional[str] = None) -> Judgment:
+    async def judge_svg(self, model_client: BaseLLMClient, svg_path: Path, svg_content: str, svg_id: str, model_name: str, judge_name: str, generation_prompt: Optional[str] = None) -> Judgment:
         # Build prompt with dynamic criteria
         criteria = self.config.judging_criteria
         criterion_descriptions = {
@@ -170,7 +171,7 @@ Respond with ONLY the JSON object."""
 
         return {'creativity_score': 5, 'aesthetics_score': 5, 'complexity_score': 5, 'reason': 'Parsing fallback'}
 
-    async def compare_svgs(self, judge_model, svg1_path: Path, svg2_path: Path, 
+    async def compare_svgs(self, judge_model: BaseLLMClient, svg1_path: Path, svg2_path: Path, 
                           svg1_content: str, svg2_content: str, svg1_id: str, svg2_id: str) -> Comparison:
         prompt = f"""You are an art critic choosing between two AI-generated SVG images.
 Choose which one is better and explain why.
@@ -231,7 +232,7 @@ Respond with ONLY the JSON."""
 
         for model_name in model_clients:
             for svg_result in svg_list:
-                svg_id = f"{svg_result.model_name}_{svg_result.theme}"
+                svg_id = f"{svg_result.model_name}_{svg_result.theme}_pass{svg_result.pass_number}"
                 for judge_idx in [1]:
                     if progress and judge_task is not None:
                         progress.update(judge_task, description=f"Judging {svg_id} with {model_name}")
@@ -255,7 +256,7 @@ Respond with ONLY the JSON."""
         aggregated = {}
         for svg_result in svg_results:
             model_name = svg_result.model_name
-            svg_id = f"{model_name}_{svg_result.theme}"
+            svg_id = f"{model_name}_{svg_result.theme}_pass{svg_result.pass_number}"
             svg_judgments = [j for j in judgments if j.svg_id == svg_id]
             if not svg_judgments:
                 continue

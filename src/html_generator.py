@@ -68,7 +68,9 @@ def generate_benchmark_html(run_data_dict: dict, output_path: Path) -> str:
     svg_lookup = {}
     for svg in svgs:
         key = (svg["model_name"], svg["theme"])
-        svg_lookup[key] = svg
+        if key not in svg_lookup:
+            svg_lookup[key] = []
+        svg_lookup[key].append(svg)
 
     judgments_lookup = {}
     for j in judgments:
@@ -89,29 +91,6 @@ def generate_benchmark_html(run_data_dict: dict, output_path: Path) -> str:
 def _build_html(run_id: str, timestamp: str, models: List[str],
                 themes: List[str], svg_lookup: dict, judgments_lookup: dict,
                 criteria_display: str = "Creativity, Aesthetics, Complexity") -> str:
-
-    cells_html = []
-    for theme in themes:
-        for model in models:
-            key = (model, theme)
-            svg_data = svg_lookup.get(key)
-
-            if svg_data and svg_data.get("status") == "success":
-                svg_code = svg_data.get("svg_code", "")
-                duration_ms = svg_data.get("duration_ms", 0)
-                tokens = svg_data.get("tokens_used")
-                tps = calculate_tokens_per_second(tokens, duration_ms)
-                svg_path = svg_data.get("svg_path", "")
-                svg_id = f"{model}_{theme}"
-                cell_judgments = judgments_lookup.get(svg_id, [])
-                avg_score = _calculate_avg_score(cell_judgments) if cell_judgments else None
-                cells_html.append(_build_success_cell(model, theme, svg_code, duration_ms,
-                                                       tokens, tps, svg_path, avg_score, cell_judgments))
-            else:
-                error_msg = ""
-                if svg_data:
-                    error_msg = svg_data.get("error_message", "Generation failed")
-                cells_html.append(_build_error_cell(model, theme, error_msg))
 
     theme_labels_html = ""
     for theme in themes:
@@ -394,6 +373,20 @@ def _build_html(run_id: str, timestamp: str, models: List[str],
 {model_labels_html}
 {"".join(_build_row_html(theme, models, svg_lookup, judgments_lookup) for theme in themes)}
     </div>
+    <script>
+        function switchPass(select) {{
+            var cell = select.closest('.cell');
+            var passValue = select.value;
+            var contents = cell.querySelectorAll('.pass-content');
+            contents.forEach(function(content) {{
+                if (content.getAttribute('data-pass') === passValue) {{
+                    content.style.display = '';
+                }} else {{
+                    content.style.display = 'none';
+                }}
+            }});
+        }}
+    </script>
 </body>
 </html>'''
 
@@ -437,68 +430,140 @@ _JUDGING_CSS = '''
             gap: 8px;
             margin-top: 8px;
         }
+        .pass-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #333;
+        }
+        .pass-dropdown {
+            background: #252525;
+            border: 1px solid #333;
+            border-radius: 4px;
+            color: #00d2ff;
+            font-size: 0.8em;
+            padding: 4px 8px;
+            cursor: pointer;
+            outline: none;
+        }
+        .pass-dropdown:hover {
+            background: #1e1e1e;
+        }
+        .pass-dropdown option {
+            background: #1e1e1e;
+            color: #e0e0e0;
+        }
+        .pass-label {
+            font-size: 0.75em;
+            color: #888;
+        }
+        .pass-content {
+            transition: opacity 0.15s ease;
+        }
 '''
 
 
 def _build_row_html(theme: str, models: List[str], svg_lookup: dict,
-                     judgments_lookup: dict) -> str:
+                      judgments_lookup: dict) -> str:
     """Build HTML for a single row (theme label + cells)."""
     escaped_theme = html.escape(theme)
     cells = []
     for model in models:
         key = (model, theme)
-        svg_data = svg_lookup.get(key)
-        if svg_data and svg_data.get("status") == "success":
-            svg_code = svg_data.get("svg_code", "")
-            duration_ms = svg_data.get("duration_ms", 0)
-            tokens = svg_data.get("tokens_used")
-            tps = calculate_tokens_per_second(tokens, duration_ms)
-            svg_path = svg_data.get("svg_path", "")
-            svg_id = f"{model}_{theme}"
-            cell_judgments = judgments_lookup.get(svg_id, [])
-            avg_score = _calculate_avg_score(cell_judgments) if cell_judgments else None
-            cells.append(_build_success_cell(model, theme, svg_code, duration_ms,
-                                             tokens, tps, svg_path, avg_score, cell_judgments))
+        svg_list = svg_lookup.get(key, [])
+        if svg_list:
+            # Check if any SVG is successful
+            has_success = any(s.get("status") == "success" for s in svg_list)
+            if has_success:
+                success_svgs = [s for s in svg_list if s.get("status") == "success"]
+                cells.append(_build_success_cells(model, theme, success_svgs, judgments_lookup))
+            else:
+                error_msg = svg_list[0].get("error_message", "Generation failed") if svg_list else "Generation failed"
+                cells.append(_build_error_cell(model, theme, error_msg))
         else:
-            error_msg = ""
-            if svg_data:
-                error_msg = svg_data.get("error_message", "Generation failed")
+            error_msg = "Generation failed"
             cells.append(_build_error_cell(model, theme, error_msg))
     row_html = f'      <div class="theme-label" title="{escaped_theme}">{escaped_theme}</div>\n{"".join(cells)}\n'
     return row_html
 
 
-def _build_success_cell(model: str, theme: str, svg_code: str,
-                        duration_ms: float, tokens: Optional[int],
-                        tps: float, svg_path: str,
-                        avg_score: Optional[float],
-                        judgments: Optional[list] = None) -> str:
-    """Build HTML for a successful SVG cell."""
-    if judgments is None:
-        judgments = []
-    duration_str = format_duration(duration_ms)
-    tokens_str = f"{tokens:,}" if tokens is not None else "N/A"
-    tps_str = f"{tps:.1f}" if tps > 0 else "N/A"
-    score_str = f"{avg_score:.2f}" if avg_score is not None else ""
-    svg_embedded = svg_code
-    judge_blocks_html = _render_judge_prompts(judgments) if judgments else ""
-    judge_section = ""
-    if judge_blocks_html:
-        judge_section = f'''        <div class="judging-summary">
-            <details>
-                <summary class="show-judges-btn">Show judges scoring</summary>
-                <div class="judges-collapsible">
+def _build_success_cells(model: str, theme: str, svg_list: list,
+                          judgments_lookup: dict) -> str:
+    """Build HTML for multiple SVG passes with a dropdown selector."""
+    if not svg_list:
+        return _build_error_cell(model, theme, "No SVG data")
+    
+    # Separate successful and failed passes
+    success_svgs = [s for s in svg_list if s.get("status") == "success"]
+    failed_svgs = [s for s in svg_list if s.get("status") != "success"]
+    
+    if not success_svgs:
+        error_msg = failed_svgs[0].get("error_message", "Generation failed") if failed_svgs else "Generation failed"
+        return _build_error_cell(model, theme, error_msg)
+    
+    # Build pass options for dropdown
+    pass_options = []
+    for i, svg_data in enumerate(success_svgs):
+        pass_num = svg_data.get("pass_number", i + 1)
+        svg_code = svg_data.get("svg_code", "")
+        duration_ms = svg_data.get("duration_ms", 0)
+        tokens = svg_data.get("tokens_used")
+        tps = calculate_tokens_per_second(tokens, duration_ms)
+        svg_path = svg_data.get("svg_path", "")
+        svg_id = f"{model}_{theme}_pass{pass_num}"
+        cell_judgments = judgments_lookup.get(svg_id, [])
+        avg_score = _calculate_avg_score(cell_judgments) if cell_judgments else None
+        pass_options.append({
+            "pass_number": pass_num,
+            "svg_code": svg_code,
+            "duration_ms": duration_ms,
+            "tokens": tokens,
+            "tps": tps,
+            "svg_path": svg_path,
+            "judgments": cell_judgments,
+            "avg_score": avg_score,
+        })
+    
+    return _build_pass_selector_cell(model, theme, pass_options)
+
+
+def _build_pass_selector_cell(model: str, theme: str, pass_options: list) -> str:
+    """Build a single cell with dropdown to switch between SVG passes."""
+    if not pass_options:
+        return _build_error_cell(model, theme, "No successful passes")
+    
+    # Build pass option elements for the dropdown
+    dropdown_options = ""
+    for opt in pass_options:
+        selected = "selected" if opt["pass_number"] == pass_options[0]["pass_number"] else ""
+        dropdown_options += f'<option value="{opt["pass_number"]}" {selected}>Pass {opt["pass_number"]}</option>\n'
+    
+    # Build content divs for each pass (only first is visible by default)
+    pass_contents = ""
+    for i, opt in enumerate(pass_options):
+        is_first = (i == 0)
+        display = "" if is_first else "display: none;"
+        duration_str = format_duration(opt["duration_ms"])
+        tokens_str = f"{opt['tokens']:,}" if opt["tokens"] is not None else "N/A"
+        tps_str = f"{opt['tps']:.1f}" if opt["tps"] > 0 else "N/A"
+        score_str = f"{opt['avg_score']:.2f}" if opt["avg_score"] is not None else ""
+        judge_blocks_html = _render_judge_prompts(opt["judgments"]) if opt["judgments"] else ""
+        judge_section = ""
+        if judge_blocks_html:
+            judge_section = f'''            <div class="judging-summary">
+                <details>
+                    <summary class="show-judges-btn">Show judges scoring</summary>
+                    <div class="judges-collapsible">
 {judge_blocks_html}
-                </div>
-            </details>
-        </div>'''
-    return f'''        <div class="cell">
-            <div class="cell-header">
-                <span class="cell-model">{html.escape(model)}</span>
-                {f'<span class="cell-score">{score_str}</span>' if score_str else ''}
-            </div>
+                    </div>
+                </details>
+            </div>'''
+        
+        pass_contents += f'''        <div class="pass-content" data-pass="{opt["pass_number"]}" style="{display}">
             <div class="svg-container">
-                {svg_embedded}
+                {opt["svg_code"]}
             </div>
             <div class="cell-stats">
                 <div class="stat">
@@ -514,8 +579,26 @@ def _build_success_cell(model: str, theme: str, svg_code: str,
                     <div class="stat-label">Tok/s</div>
                 </div>
             </div>
-            {f'<div class="svg-path">{html.escape(svg_path)}</div>' if svg_path else ''}
+            {f'<div class="svg-path">{html.escape(opt["svg_path"])}</div>' if opt["svg_path"] else ''}
             {judge_section}
+        </div>
+'''
+    
+    num_passes = len(pass_options)
+    pass_label = f' ({num_passes} passes)' if num_passes > 1 else ''
+    
+    return f'''        <div class="cell">
+            <div class="cell-header">
+                <span class="cell-model">{html.escape(model)}</span>
+                {f'<span class="cell-score">{pass_options[0]["avg_score"]:.2f}</span>' if pass_options[0]["avg_score"] is not None else ''}
+            </div>
+            <div class="pass-selector">
+                <select class="pass-dropdown" onchange="switchPass(this)">
+{dropdown_options}
+                </select>
+                <span class="pass-label">{html.escape(model)}{pass_label}</span>
+            </div>
+{pass_contents}
         </div>
 '''
 

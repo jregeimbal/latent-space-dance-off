@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from pydantic import ValidationError
 
+from src.llm_client import LLMChunk
 from src.svg_judge import Comparison, Judgment, SVGJudge
 
 from tests.conftest import _run_async
@@ -143,8 +144,9 @@ class TestJudgeSvg:
     def test_happy_path(self, mock_config):
         judge = SVGJudge(mock_config)
         mock_client = AsyncMock()
-        mock_response = Mock()
-        mock_response.response = '{"creativity_score": 8, "aesthetics_score": 7, "complexity_score": 6, "reason": "good work"}'
+        mock_response = LLMChunk(
+            response='{"creativity_score": 8, "aesthetics_score": 7, "complexity_score": 6, "reason": "good work"}'
+        )
         mock_client.generate = AsyncMock(return_value=mock_response)
 
         svg_path = Path("/tmp/test.svg")
@@ -211,23 +213,26 @@ class TestRunAllJudgments:
                 svg_code="svg",
                 svg_path=None,
                 generation_prompt=None,
+                pass_number=1,
             ):
                 self.model_name = model_name
                 self.theme = theme
                 self.svg_code = svg_code
                 self.svg_path = svg_path
                 self.generation_prompt = generation_prompt
+                self.pass_number = pass_number
 
         svg_results = [
             MockSVGResult("model_a", "abstract"),
             MockSVGResult("model_b", "landscape"),
         ]
 
+        mock_response = LLMChunk(
+            response='{"creativity_score": 7, "aesthetics_score": 8, "complexity_score": 9, "reason": "nice"}'
+        )
         mock_client_a = AsyncMock()
-        mock_client_b = AsyncMock()
-        mock_response = Mock()
-        mock_response.response = '{"creativity_score": 7, "aesthetics_score": 8, "complexity_score": 9, "reason": "nice"}'
         mock_client_a.generate = AsyncMock(return_value=mock_response)
+        mock_client_b = AsyncMock()
         mock_client_b.generate = AsyncMock(return_value=mock_response)
 
         model_clients = {"model_a": mock_client_a, "model_b": mock_client_b}
@@ -246,10 +251,11 @@ class TestAggregateJudgments:
         judge = SVGJudge(mock_config)
 
         class MockSVGResult:
-            def __init__(self, model_name, theme, svg_path=None):
+            def __init__(self, model_name, theme, svg_path=None, pass_number=1):
                 self.model_name = model_name
                 self.theme = theme
                 self.svg_path = svg_path
+                self.pass_number = pass_number
 
         svg_results = [
             MockSVGResult("model_a", "abstract"),
@@ -258,14 +264,14 @@ class TestAggregateJudgments:
 
         judgments = [
             Judgment(
-                svg_id="model_a_abstract",
+                svg_id="model_a_abstract_pass1",
                 svg_model_name="model_a",
                 judged_by="judge_1",
                 scores=_scores(creativity=8.0, aesthetics=7.0, complexity=6.0),
                 total_score=7.0,
             ),
             Judgment(
-                svg_id="model_b_landscape",
+                svg_id="model_b_landscape_pass1",
                 svg_model_name="model_b",
                 judged_by="judge_1",
                 scores=_scores(creativity=9.0, aesthetics=8.0, complexity=7.0),
@@ -294,9 +300,10 @@ class TestAggregateJudgments:
         judge = SVGJudge(mock_config)
 
         class MockSVGResult:
-            def __init__(self, model_name, theme):
+            def __init__(self, model_name, theme, pass_number=1):
                 self.model_name = model_name
                 self.theme = theme
+                self.pass_number = pass_number
 
         svg_results = [
             MockSVGResult("model_a", "abstract"),
@@ -305,7 +312,7 @@ class TestAggregateJudgments:
 
         judgments = [
             Judgment(
-                svg_id="model_a_abstract",
+                svg_id="model_a_abstract_pass1",
                 svg_model_name="model_a",
                 judged_by="judge_1",
                 scores=_scores(creativity=7.0, aesthetics=7.0, complexity=7.0),
