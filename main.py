@@ -610,7 +610,7 @@ async def _tournament_impl(
                     try:
                         ascii_art = svg_to_ascii(svg.svg_code, width=80, use_ansi=True)
                         console.print(f"  [cyan]{svg.model_name}:[/cyan]")
-                        console.print(ascii_art, markup=False, highlight=False)
+                        console.print(ascii_art.rstrip(), markup=False, highlight=False)
                     except Exception:
                         console.print(f"  [dim]{svg.model_name}: [italic](SVG render skipped)[/italic][/dim]")
 
