@@ -118,6 +118,8 @@ class Tournament:
         svg_per_model: int = 2,
         judge_model: str = "",
     ) -> None:
+        if not model_clients:
+            raise ValueError("At least one model client is required")
         self.model_clients = model_clients
         self.config = config
         self.theme_pool = theme_pool

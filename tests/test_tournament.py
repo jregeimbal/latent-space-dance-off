@@ -129,12 +129,8 @@ class TestTournament:
         config.LEADERBOARDS_DIR = tmp_path / "leaderboards"
         return config
 
-    def test_tournament_reduces_models_to_champion(self):
+    def test_tournament_reduces_models_to_champion(self, tmp_path):
         """Tournament eliminates models until one champion remains."""
-        tmp_path = Path("/tmp/tournament_test")
-        tmp_path.mkdir(exist_ok=True)
-        (tmp_path / "assets").mkdir(exist_ok=True)
-
         config = self._make_mock_config(tmp_path)
 
         # Mock SVG generation: all models succeed
@@ -181,12 +177,8 @@ class TestTournament:
         assert result.rounds[0].eliminated == "model_b"
         assert result.rounds[1].eliminated == "model_c"
 
-    def test_tournament_two_models_one_round(self):
+    def test_tournament_two_models_one_round(self, tmp_path):
         """Tournament with 2 models completes in 1 round."""
-        tmp_path = Path("/tmp/tournament_test2")
-        tmp_path.mkdir(exist_ok=True)
-        (tmp_path / "assets").mkdir(exist_ok=True)
-
         config = self._make_mock_config(tmp_path)
 
         mock_client_a = AsyncMock()
@@ -222,11 +214,8 @@ class TestTournament:
         assert result.champion == "model_a"
         assert len(result.rounds) == 1
 
-    def test_save_result_writes_json(self):
+    def test_save_result_writes_json(self, tmp_path):
         """Tournament.save_result writes tournament.json to the output directory."""
-        tmp_path = Path("/tmp/tournament_test3")
-        tmp_path.mkdir(exist_ok=True)
-
         tr = TournamentResult(
             run_id="test-run-123",
             timestamp="2024-01-01T00:00:00",
@@ -235,7 +224,7 @@ class TestTournament:
         )
 
         tournament = Tournament(
-            model_clients={},
+            model_clients={"dummy": AsyncMock()},
             config=MagicMock(),
             theme_pool=["abstract"],
             output_dir=str(tmp_path),
@@ -250,13 +239,10 @@ class TestTournament:
         assert data["run_id"] == "test-run-123"
         assert data["champion"] == "model_a"
 
-    def test_build_rankings_handles_failed_svgs(self):
+    def test_build_rankings_handles_failed_svgs(self, tmp_path):
         """_build_rankings puts models with failed SVGs at the bottom."""
-        tmp_path = Path("/tmp/tournament_test4")
-        tmp_path.mkdir(exist_ok=True)
-
         tournament = Tournament(
-            model_clients={},
+            model_clients={"dummy": AsyncMock()},
             config=MagicMock(),
             theme_pool=["abstract"],
             output_dir=str(tmp_path),
