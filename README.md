@@ -124,6 +124,32 @@ python main.py leaderboard
 python main.py leaderboard 2026-04-29T12:00:00.000000
 ```
 
+### Run Tournament
+
+```bash
+python main.py tournament [OPTIONS]
+```
+
+**Options:**
+
+| Option | Short | Default | Description |
+|--------|-------|---------|-------------|
+| `--models` | `-m` | (required) | Comma-separated model names |
+| `--theme-pool` | `-tp` | `abstract,landscape,portrait,object,scene` | Available themes for audience-judge |
+| `--judges` | `-j` | `1` | Number of judge models |
+| `--output` | `-o` | `./output` | Output directory |
+| `--svg-per-model` | `-s` | `2` | SVGs each model generates per round |
+| `--ollama-host` | `--host` | `http://localhost:11434` | Ollama host URL |
+
+**Example:**
+
+```bash
+# Run a tournament between 3 models
+python main.py tournament --models llama3,gemma2,mistral
+```
+
+A tournament runs a single-elimination bracket where models compete in free-for-all rounds. In each round, an audience-judge picks a theme, all surviving models generate SVGs, and the worst is eliminated. The last model standing is crowned champion.
+
 ### Export Results
 
 ```bash
