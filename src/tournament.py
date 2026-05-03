@@ -264,7 +264,7 @@ class Tournament:
 
     def save_result(self, result: TournamentResult, output_dir: str) -> Path:
         """Save tournament result to JSON file."""
-        run_dir = Path(output_dir) / "benchmarks" / result.run_id
+        run_dir = Path(output_dir)
         run_dir.mkdir(parents=True, exist_ok=True)
         (run_dir / "assets").mkdir(parents=True, exist_ok=True)
 
