@@ -6,6 +6,7 @@ and judge each other's work.
 """
 
 import asyncio
+import html
 import json
 import sys
 import time
@@ -17,6 +18,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+from rich._spinners import SPINNERS
 
 from src.config import Config
 from src.model_manager import ModelManager
@@ -24,7 +26,7 @@ from src.svg_generator import SVGGenerator
 from src.svg_judge import SVGJudge
 from src.ranking import RankingSystem, Leaderboard
 from src.benchmark import BenchmarkManager, BenchmarkRecord, RunData, SVGResult
-from src.html_generator import generate_benchmark_html
+from src.html_generator import generate_benchmark_html, generate_dance_off_html
 from src.utils import format_duration, svg_to_ascii, make_clickable_link
 
 app = typer.Typer(
@@ -35,6 +37,12 @@ app = typer.Typer(
 
 console = Console()
 
+spinner_frames = ["◤", "▀", "◥", "▐", "◢", "▂", "◣", "▌"]
+# Register the custom spinner in the global SPINNERS dictionary
+SPINNERS["spinner_frames"] = {
+    "interval": 120,  # Milliseconds between frames
+    "frames": spinner_frames
+}
 
 def get_config(
     ollama_host: str = "http://localhost:11434",
@@ -167,7 +175,7 @@ async def _run_impl(
     console.print(f"\n[cyan]Generating SVGs for {len(model_clients)} models x {len(theme_list)} themes x {num_passes} passes...[/cyan]")
 
     with Progress(
-        SpinnerColumn(),
+        SpinnerColumn(spinner_name="spinner_frames", style="green"),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
         TaskProgressColumn(),
@@ -249,7 +257,7 @@ async def _run_impl(
         svg_judge_count = len(list(model_clients.values())) * len(svg_results)
         
         with Progress(
-            SpinnerColumn(),
+            SpinnerColumn(spinner_name="spinner_frames", style="green"),
             TextColumn("[progress.description]{task.description}"),
             BarColumn(),
             TaskProgressColumn(),
@@ -265,7 +273,7 @@ async def _run_impl(
             aggregated = svg_judge.aggregate_judgments(svg_results, judgments)
 
         benchmark_manager.save_run_data(run_data)
-        sys.stdout.write(f"\n[yellow]Benchmark data saved to: {make_clickable_link(run_dir / 'benchmark.json')}[/yellow]\n")
+        sys.stdout.write(f"\nBenchmark data saved to: {make_clickable_link(run_dir / 'benchmark.json')}\n")
         
           # Generate HTML report
         html_path = run_dir / "benchmark_report.html"
@@ -302,7 +310,7 @@ async def _run_impl(
                     "judge_prompt": getattr(j, 'judge_prompt', None)
                })
         generate_benchmark_html(run_data_dict, html_path)
-        sys.stdout.write(f"[yellow]HTML report saved to: {make_clickable_link(html_path)}[/yellow]\n")
+        sys.stdout.write(f"HTML report saved to: {make_clickable_link(html_path)}\n")
         
         leaderboard = ranking_system.generate_leaderboard(run_data)
         leaderboard_path = ranking_system.save_leaderboard(leaderboard, run_dir=run_dir)
@@ -497,6 +505,137 @@ def runs(
           )
 
     console.print(table)
+
+
+@app.command()
+def dance_off(
+    models: Optional[str] = typer.Option(None, "--models", "-m", help="Comma-separated model names to compete"),
+    theme_pool: str = typer.Option("abstract,landscape,portrait,object,scene", "--theme-pool", "-tp", help="Comma-separated themes for audience-judge to pick from"),
+    num_judges: int = typer.Option(1, "--judges", "-j", help="Number of judge models (1 for theme selection + round judging)"),
+    output_dir: str = typer.Option("./output", "--output", "-o"),
+    ollama_host: str = typer.Option("http://localhost:11434", "--ollama-host", "--host"),
+    client_type: str = typer.Option("ollama", "--client-type", help="LLM client type (ollama or lmstudio)"),
+    llm_host: str = typer.Option("", "--llm-host", help="LLM server host URL"),
+    svg_per_model: int = typer.Option(2, "--svg-per-model", "-s", help="SVGs each model generates per round"),
+):
+    """Run a single-elimination dance-off where models compete in free-for-all rounds. Each round: audience-judge picks a theme, all surviving models generate SVGs, round judge eliminates the worst."""
+    asyncio.run(_dance_off_impl(models, theme_pool, num_judges, output_dir, ollama_host, client_type, llm_host, svg_per_model))
+
+
+async def _dance_off_impl(
+    models: Optional[str],
+    theme_pool: str,
+    num_judges: int,
+    output_dir: str,
+    ollama_host: str,
+    client_type: str,
+    llm_host: str,
+    svg_per_model: int,
+):
+    theme_list = [t.strip() for t in theme_pool.split(",")]
+    config = get_config(ollama_host, output_dir, num_judges, "", "", False, client_type, llm_host)
+
+    model_manager = ModelManager(host=config.llm_host, client_type=config.LLM_CLIENT)
+    benchmark_manager = BenchmarkManager(config)
+    model_list = parse_models(models or "")
+
+    if not model_list:
+        console.print(Panel(
+            "[red]No models specified. Use --models.[/red]",
+            title="No Models"
+        ))
+        return
+
+    if len(model_list) < 2:
+        console.print(Panel(
+            "[red]Need at least 2 models for a dance-off.[/red]",
+            title="Not Enough Models"
+        ))
+        return
+
+    # Initialize model clients
+    model_clients = {}
+    for model_name in model_list:
+        try:
+            client = await model_manager.get_model(model_name)
+            model_clients[model_name] = client
+            console.print(f"[green]Model {model_name} ready[/green]")
+        except Exception as e:
+            console.print(f"[red]Model {model_name} failed: {e}[/red]")
+
+    if len(model_clients) < 2:
+        console.print("[red]Need at least 2 working models for a dance-off.[/red]")
+        return
+
+    # Create run directory using BenchmarkManager
+    run_id = benchmark_manager.generate_run_id()
+    run_dir = benchmark_manager._ensure_run_dir(run_id)
+    assets_dir = run_dir / "assets"
+    assets_dir.mkdir(parents=True, exist_ok=True)
+
+    console.print(Panel(
+        f"[bold green]Dance-Off Starting[/bold green]\n"
+        f"Models: {', '.join(model_clients.keys())}\n"
+        f"Theme pool: {', '.join(theme_list)}\n"
+        f"SVGs per model per round: {svg_per_model}\n"
+        f"Output: {run_dir}",
+        title="[bold]Latent Space Dance Off - Dance-Off[/bold]",
+        border_style="green"
+    ))
+
+    # Import DanceOff here to avoid circular import at module level
+    from src.dance_off import DanceOff
+
+    dance_off = DanceOff(
+        model_clients=model_clients,
+        config=config,
+        theme_pool=theme_list,
+        output_dir=str(run_dir),
+        svg_per_model=svg_per_model,
+        judge_model=model_list[0],
+    )
+
+    # Run dance-off with live progress
+    with Progress(
+        SpinnerColumn(spinner_name="spinner_frames", style="green"),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+    ) as progress:
+        task = progress.add_task("Dance-Off...", total=None)
+
+        result = await dance_off.run()
+
+        # Display round results
+        for round_result in result.rounds:
+            progress.update(task, description=f"Round {round_result.round_num}: {round_result.theme}")
+            console.print(f"\n[cyan]Round {round_result.round_num}:[/cyan] Theme = [bold]{round_result.theme}[/bold]")
+
+            # Show ASCII art for each model's SVG
+            for svg in round_result.svg_results:
+                if svg.status == "success" and svg.svg_code:
+                    try:
+                        ascii_art = svg_to_ascii(svg.svg_code, width=80, use_ansi=True)
+                        console.print(f"  [cyan]{svg.model_name}:[/cyan]")
+                        import sys
+                        sys.stdout.write(ascii_art + "\n")
+                    except Exception:
+                        console.print(f"  [dim]{svg.model_name}: [italic](SVG render skipped)[/italic][/dim]")
+
+            console.print(f"  [red]Eliminated:[/red] [bold]{round_result.eliminated}[/bold]")
+            console.print(f"  [green]Survivors:[/green] {', '.join(dance_off.survivors)}")
+
+    # Display champion
+    console.print(f"\n[bold green]=== CHAMPION: {result.champion} ===[/bold green]\n")
+
+    # Save dance-off result
+    result_path = dance_off.save_result(result, str(run_dir))
+    sys.stdout.write(f"\nDance-off data saved to: {make_clickable_link(result_path)}\n")
+
+    # Generate HTML report
+    html_path = run_dir / "dance_off_report.html"
+    generate_dance_off_html(result, html_path)
+    sys.stdout.write(f"Dance-off report saved to: {make_clickable_link(html_path)}\n")
 
 
 if __name__ == "__main__":
