@@ -25,7 +25,7 @@ from src.svg_judge import SVGJudge
 from src.ranking import RankingSystem, Leaderboard
 from src.benchmark import BenchmarkManager, BenchmarkRecord, RunData, SVGResult
 from src.html_generator import generate_benchmark_html
-from src.utils import format_duration
+from src.utils import format_duration, svg_to_ascii, make_clickable_link
 
 app = typer.Typer(
     name="latent-space-dance-off",
@@ -210,7 +210,11 @@ async def _run_impl(
         console.print(f"  Status: {result.status}")
         console.print(f"  Duration: {duration_str}")
         console.print(f"  Tokens: {tokens_str} ({tps:.2f} tokens/sec)")
-        console.print(f"  File: {result.svg_path}")
+        console.print(f"  File: {make_clickable_link(result.svg_path)}", markup=False, highlight=False)
+        if result.status == "success" and result.svg_code:
+            ascii_art = svg_to_ascii(result.svg_code, width=100, use_ansi=True)
+            import sys
+            sys.stdout.write(ascii_art + "\n")
 
     run_data = RunData(
         run_id=run_id,
@@ -261,7 +265,7 @@ async def _run_impl(
             aggregated = svg_judge.aggregate_judgments(svg_results, judgments)
 
         benchmark_manager.save_run_data(run_data)
-        console.print(f"\n[yellow]Benchmark data saved to: {run_dir}/benchmark.json[/yellow]")
+        sys.stdout.write(f"\n[yellow]Benchmark data saved to: {make_clickable_link(run_dir / 'benchmark.json')}[/yellow]\n")
         
           # Generate HTML report
         html_path = run_dir / "benchmark_report.html"
@@ -298,7 +302,7 @@ async def _run_impl(
                     "judge_prompt": getattr(j, 'judge_prompt', None)
                })
         generate_benchmark_html(run_data_dict, html_path)
-        console.print(f"[yellow]HTML report saved to: {html_path}[/yellow]")
+        sys.stdout.write(f"[yellow]HTML report saved to: {make_clickable_link(html_path)}[/yellow]\n")
         
         leaderboard = ranking_system.generate_leaderboard(run_data)
         leaderboard_path = ranking_system.save_leaderboard(leaderboard, run_dir=run_dir)
@@ -337,11 +341,11 @@ async def _run_impl(
                 entry.svg_id,
                    *score_values                  )
         console.print(table)
-        console.print(f"\n[yellow]Leaderboard saved to: {leaderboard_path}[/yellow]")
+        sys.stdout.write(f"\nLeaderboard saved to: {make_clickable_link(leaderboard_path)}\n")
     elif svg_results and disable_judging:
         
         benchmark_manager.save_run_data(run_data)
-        console.print(f"\n[yellow]Benchmark data saved to: {run_dir}/benchmark.json[/yellow]")
+        sys.stdout.write(f"\nBenchmark data saved to: {make_clickable_link(run_dir / 'benchmark.json')}\n")
         
           # Generate HTML report without judging data
         html_path = run_dir / "benchmark_report.html"
@@ -355,10 +359,10 @@ async def _run_impl(
                "model_list": run_data.model_list,
                "themes": run_data.themes,
                "judgments": [],
-               "criteria": config.judging_criteria
-            }
+                "criteria": config.judging_criteria
+             }
         generate_benchmark_html(run_data_dict, html_path)
-        console.print(f"[yellow]HTML report saved to: {html_path}[/yellow]")
+        sys.stdout.write(f"HTML report saved to: {make_clickable_link(html_path)}\n")
         
         console.print("[yellow]Judging was disabled. No judge output or leaderboard generated.[/yellow]")
     else:
@@ -427,7 +431,7 @@ def leaderboard(
 
         console.print(table)
         csv_path = ranking_system.export_to_csv(leaderboard_obj)
-        console.print(f"\n[yellow]Saved CSV: {csv_path}[/yellow]")
+        sys.stdout.write(f"\n[yellow]Saved CSV: {make_clickable_link(csv_path)}[/yellow]\n")
 
     except FileNotFoundError as e:
         console.print(f"[red]Leaderboard not found: {e}[/red]")
@@ -456,10 +460,10 @@ def export(
 
         if format == "csv":
             filepath = ranking_system.export_to_csv(leaderboard_obj)
-            console.print(f"[green]Exported to CSV: {filepath}[/green]")
+            sys.stdout.write(f"[green]Exported to CSV: {make_clickable_link(filepath)}[/green]\n")
         elif format == "json":
             filepath = ranking_system.save_leaderboard(leaderboard_obj)
-            console.print(f"[green]Exported to JSON: {filepath}[/green]")
+            sys.stdout.write(f"[green]Exported to JSON: {make_clickable_link(filepath)}[/green]\n")
 
     except FileNotFoundError as e:
         console.print(f"[red]Leaderboard not found: {e}[/red]")

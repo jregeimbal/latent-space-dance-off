@@ -117,3 +117,128 @@ def calculate_tokens_per_second(tokens, duration_ms):
     if duration_ms <= 0:
         return 0.0
     return tokens / (duration_ms / 1000.0)
+
+
+# ─── SVG → ASCII art ─────────────────────────────────────────────────────────
+
+import io
+import os
+import tempfile
+import contextlib
+import cairosvg
+from PIL import Image
+
+
+def make_clickable_link(path: str | os.PathLike[str], text: str | None = None) -> str:
+    """Wrap text in OSC 8 terminal hyperlink escape sequences."""
+    if text is None:
+        text = str(path)
+    # OSC 8 hyperlink format: \033]8;;URI\033\\text\033]8;;\033\\
+    uri = f"file://{os.path.abspath(path)}"
+    return f"\033]8;;{uri}\033\\{text}\033]8;;\033\\"
+
+
+def svg_to_ascii(svg_code: str, width: int = 120, use_ansi: bool = False, use_ansi16: bool = False) -> str:
+    """Convert SVG code to ASCII art for terminal display.
+
+    Uses cairosvg to render SVG to PNG, img2ascii for character layout,
+    then samples colors from the rendered image for ANSI color support.
+
+    Args:
+        svg_code: The SVG XML string
+        width: Output width in characters
+        use_ansi: Whether to use ANSI color codes
+
+    Returns:
+        ASCII art string
+    """
+    from img2ascii.text_gen import generate_ascii_t
+
+    if not svg_code or not svg_code.strip():
+        return "[empty SVG]"
+
+    # Render SVG to PNG bytes using cairosvg
+    png_bytes = cairosvg.svg2png(bytestring=svg_code.encode("utf-8"))
+    assert png_bytes is not None, "cairosvg failed to render SVG"
+    color_image = Image.open(io.BytesIO(png_bytes)).convert("RGB")
+    gray_image = color_image.convert("L")
+
+    # Calculate height maintaining character aspect ratio (chars ~2x taller than wide)
+    img_w, img_h = gray_image.size
+    cell_ratio = 2.0
+    height = max(int(width * img_h / img_w / cell_ratio), 1)
+
+    # Resize both images to target dimensions
+    gray_image = gray_image.resize((width, height), Image.Resampling.LANCZOS)
+    color_image = color_image.resize((width, height), Image.Resampling.LANCZOS)
+
+    # Use img2ascii to get ASCII character layout
+    with tempfile.TemporaryDirectory() as tmpdir:
+        img_path = os.path.join(tmpdir, "input.png")
+        out_path = os.path.join(tmpdir, "output.txt")
+        gray_image.save(img_path)
+
+        with contextlib.redirect_stdout(open(os.devnull, "w")):
+            generate_ascii_t(inputfile=img_path, outputfile=out_path, kernel=1, density=0.3)
+
+        with open(out_path, "r") as f:
+            ascii_lines = f.read().rstrip("\n").split("\n")
+
+    if use_ansi:
+        # Build color-coded output by sampling RGB from the resized image
+        colored_lines = []
+        for row, line in enumerate(ascii_lines):
+            line_parts = []
+            last_color = None
+            for col, char in enumerate(line):
+                pixel = color_image.getpixel((col, row))
+                if isinstance(pixel, tuple):
+                    r, g, b = pixel
+                else:
+                    r = g = b = int(pixel or 0)
+                ansi = _rgb_to_ansi16(r, g, b) if use_ansi16 else _rgb_to_ansi256(r, g, b)
+                if ansi != last_color:
+                    line_parts.append(f"\033[38;5;{ansi}m")
+                    last_color = ansi
+                line_parts.append(char)
+            colored_lines.append("".join(line_parts) + "\033[0m")
+        return "\n".join(colored_lines)
+
+    return "\n".join(ascii_lines)
+
+
+def _rgb_to_ansi16(r: int, g: int, b: int) -> int:
+    """Map RGB color to nearest 256-color ANSI code."""
+    colors = {
+        (0,0,0): 0, (0,0,128): 4, (0,128,0): 2, (0,128,128): 6,
+        (128,0,0): 1, (128,0,128): 5, (128,128,0): 3, (192,192,192): 7,
+        (128,128,128): 8, (255,0,0): 9, (0,255,0): 10, (255,255,0): 11,
+        (0,0,255): 12, (255,0,255): 13, (0,255,255): 14, (255,255,255): 15,
+    }
+    closest = min(colors.keys(), key=lambda c: (c[0]-r)**2 + (c[1]-g)**2 + (c[2]-b)**2)
+    return colors[closest]
+
+def _rgb_to_ansi256(r, g, b):
+    # Define valid intensity levels for the color cube
+    cube_levels = [0x00, 0x5f, 0x87, 0xaf, 0xd7, 0xff]
+    
+    # Check if it's a grayscale color (R=G=B)
+    if r == g == b:
+        # Find nearest grayscale index (232-255)
+        # Grayscale steps are 8 + 10*y for y in 0..23
+        y = round((r - 8) / 10)
+        if 0 <= y <= 23:
+            return 232 + y
+        # Fallback to nearest cube if out of grayscale range
+        # (Though grayscale range covers most grays)
+    
+    # Round each component to nearest cube level
+    def round_to_cube(val):
+        return min(range(len(cube_levels)), key=lambda i: abs(cube_levels[i] - val))
+    
+    r_idx = round_to_cube(r)
+    g_idx = round_to_cube(g)
+    b_idx = round_to_cube(b)
+    
+    # Calculate ANSI index for 216-color cube
+    return 16 + (r_idx * 36) + (g_idx * 6) + b_idx

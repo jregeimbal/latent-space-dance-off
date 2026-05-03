@@ -218,12 +218,10 @@ class TestOllamaNonStreamingGenerate:
 
 class TestOllamaStreamingGenerate:
     def _make_sse_lines(self, chunks: list) -> list:
-        """Convert chunk dicts to SSE data lines."""
+        """Convert chunk dicts to JSON lines."""
         lines = []
         for chunk in chunks:
-            data_str = json.dumps(chunk)
-            lines.append(f"data: {data_str}")
-        lines.append("data: [DONE]")
+            lines.append(json.dumps(chunk))
         return lines
 
     @pytest.mark.asyncio
@@ -293,8 +291,8 @@ class TestOllamaStreamingGenerate:
     @pytest.mark.asyncio
     async def test_streaming_skips_malformed_json(self):
         sse_lines = [
-            "data: {invalid json",
-            "data: {}",
+            "{invalid json",
+            "{}",
         ]
 
         async def async_iter_lines():

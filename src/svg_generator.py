@@ -8,13 +8,13 @@ import asyncio
 import re
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import AsyncIterator, Dict, List, Optional, Tuple, cast
 
 from typing import Callable, Optional
 
 from pydantic import BaseModel, Field
 
-from src.llm_client import BaseLLMClient
+from src.llm_client import BaseLLMClient, LLMChunk
 from rich.console import Console
 
 console = Console()
@@ -190,6 +190,7 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
         start_time = time.perf_counter()
         full_streamed_text = ""
 
+        prompt = ""
         try:
             prompt = self._get_svg_prompt(theme, model_name)
 
@@ -204,11 +205,12 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
                 prompt=prompt,
                 stream=True
              )
+            streamed_response = cast(AsyncIterator[LLMChunk], response)
 
             last_chunk = None
             tokens_evaluated = None
             prompt_tokens_evaluated = None
-            async for chunk in response:
+            async for chunk in streamed_response:
                 chunk_text = getattr(chunk, 'response', '') or ''
                 full_streamed_text += chunk_text
                 last_chunk = chunk
@@ -225,16 +227,17 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
 
             duration_ms = (time.perf_counter() - start_time) * 1000
             svg_output = last_chunk and getattr(last_chunk, 'response', None) or full_streamed_text
-            tokens = svg_output
             
              # Extract SVG
             svg_code = self._extract_svg_from_response(svg_output)
 
-            # Determine filename
+             # Determine filename
+            safe_model = model_name.replace('/', '_').replace(' ', '_')
+            safe_theme = theme.replace(' ', '_')
             if run_id:
-                svg_filename = f"{run_id}_{model_name.replace('/', '_')}_{theme}_pass{pass_number}.svg"
+                svg_filename = f"{run_id}_{safe_model}_{safe_theme}_pass{pass_number}.svg"
             else:
-                svg_filename = f"{model_name.replace('/', '_')}_{theme}_pass{pass_number}.svg"
+                svg_filename = f"{safe_model}_{safe_theme}_pass{pass_number}.svg"
 
             svg_path = self.svgs_dir / svg_filename
 

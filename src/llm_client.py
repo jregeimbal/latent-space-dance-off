@@ -136,19 +136,20 @@ class _OllamaHttpClient(BaseLLMClient):
         async with client.stream("POST", "/api/generate", json=payload) as response:
             response.raise_for_status()
             async for line in response.aiter_lines():
-                if not line or not line.startswith("data:"):
+                if not line or not line.startswith("{"):
                     continue
-                data_str = line[5:].strip()
+                data_str = line;
                 if not data_str:
                     continue
                 try:
                     data = json.loads(data_str)
+                    chunk_response = data.get("response", "")
                     yield LLMChunk(
-                        response=data.get("response", ""),
+                        response=chunk_response,
                         eval_count=data.get("eval_count"),
                         prompt_eval_count=data.get("prompt_eval_count"),
                     )
-                except json.JSONDecodeError:
+                except json.JSONDecodeError as e:
                     continue
 
     async def list(self) -> Dict[str, Any]:
@@ -256,12 +257,14 @@ class _OpenAIHttpClient(BaseLLMClient):
     ) -> AsyncIterator[LLMChunk]:
         async with client.stream("POST", "/v1/chat/completions", json=payload) as response:
             response.raise_for_status()
+            tokens=0
             async for line in response.aiter_lines():
                 if not line or not line.startswith("data:"):
                     continue
                 data_str = line[5:].strip()
                 if not data_str or data_str == "[DONE]":
                     continue
+                tokens+=1
                 try:
                     data = json.loads(data_str)
                     # console.print( f"Debug: Received streaming chunk data: {data}" )
@@ -274,7 +277,7 @@ class _OpenAIHttpClient(BaseLLMClient):
                     usage = data.get("usage") or {}
                     yield LLMChunk(
                         response=content,
-                        eval_count=_get_token_count(usage, "completion_tokens"),
+                        eval_count=tokens,
                         prompt_eval_count=_get_token_count(usage, "prompt_tokens"),
                     )
                 except json.JSONDecodeError:
