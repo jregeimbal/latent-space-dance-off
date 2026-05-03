@@ -136,3 +136,13 @@ class TestRoundJudge:
         result = judge._parse_rankings(text, ["model_a", "model_b"])
 
         assert result == []
+
+    def test_parse_rankings_duplicate_ranks_fallback(self):
+        """_parse_rankings returns empty list when ranks are duplicated."""
+        mock_client = AsyncMock()
+        judge = RoundJudge(judge_client=mock_client, judge_model="test_judge")
+
+        text = '[{"model": "model_a", "rank": 1}, {"model": "model_b", "rank": 1}]'
+        result = judge._parse_rankings(text, ["model_a", "model_b"])
+
+        assert result == []

@@ -688,7 +688,7 @@ def generate_dance_off_html(result, output_path: Path) -> str:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tournament - {html.escape(result.champion or "Unknown")}</title>
+    <title>Dance-Off - {html.escape(result.champion or "Unknown")}</title>
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f0f; color: #e0e0e0; padding: 20px; }}

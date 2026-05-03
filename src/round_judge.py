@@ -127,6 +127,10 @@ class RoundJudge:
                 if not (1 <= rank <= len(survivors)):
                     continue
                 valid.append(entry)
+            # Check for duplicate ranks
+            ranks = [e["rank"] for e in valid]
+            if len(ranks) != len(set(ranks)):
+                return []
             valid.sort(key=lambda e: e["rank"])
             # Ensure all survivors are present in rankings
             ranked_models = {e["model"] for e in valid}
