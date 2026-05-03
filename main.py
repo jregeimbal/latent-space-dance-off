@@ -266,7 +266,7 @@ async def _run_impl(
             aggregated = svg_judge.aggregate_judgments(svg_results, judgments)
 
         benchmark_manager.save_run_data(run_data)
-        sys.stdout.write(f"\n[yellow]Benchmark data saved to: {make_clickable_link(run_dir / 'benchmark.json')}[/yellow]\n")
+        sys.stdout.write(f"\nBenchmark data saved to: {make_clickable_link(run_dir / 'benchmark.json')}\n")
         
           # Generate HTML report
         html_path = run_dir / "benchmark_report.html"
@@ -303,7 +303,7 @@ async def _run_impl(
                     "judge_prompt": getattr(j, 'judge_prompt', None)
                })
         generate_benchmark_html(run_data_dict, html_path)
-        sys.stdout.write(f"[yellow]HTML report saved to: {make_clickable_link(html_path)}[/yellow]\n")
+        sys.stdout.write(f"HTML report saved to: {make_clickable_link(html_path)}\n")
         
         leaderboard = ranking_system.generate_leaderboard(run_data)
         leaderboard_path = ranking_system.save_leaderboard(leaderboard, run_dir=run_dir)
@@ -610,7 +610,8 @@ async def _tournament_impl(
                     try:
                         ascii_art = svg_to_ascii(svg.svg_code, width=80, use_ansi=True)
                         console.print(f"  [cyan]{svg.model_name}:[/cyan]")
-                        console.print(ascii_art.rstrip(), markup=False, highlight=False)
+                        import sys
+                        sys.stdout.write(ascii_art + "\n")
                     except Exception:
                         console.print(f"  [dim]{svg.model_name}: [italic](SVG render skipped)[/italic][/dim]")
 
@@ -622,12 +623,12 @@ async def _tournament_impl(
 
     # Save tournament result
     result_path = tournament.save_result(result, str(run_dir))
-    sys.stdout.write(f"\n[yellow]Tournament data saved to: {make_clickable_link(result_path)}[/yellow]\n")
+    sys.stdout.write(f"\nTournament data saved to: {make_clickable_link(result_path)}\n")
 
     # Generate HTML report
     html_path = run_dir / "tournament_report.html"
     generate_tournament_html(result, html_path)
-    sys.stdout.write(f"[yellow]Tournament report saved to: {make_clickable_link(html_path)}[/yellow]\n")
+    sys.stdout.write(f"Tournament report saved to: {make_clickable_link(html_path)}\n")
 
 
 if __name__ == "__main__":
