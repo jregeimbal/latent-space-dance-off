@@ -97,22 +97,42 @@ class RoundJudge:
 
     def _parse_rankings(self, text: str, survivors: List[str]) -> List[dict]:
         """Parse JSON rankings from judge response."""
-        # Try to extract JSON array
-        json_pattern = re.compile(r'\[.*\]', re.DOTALL)
-        match = json_pattern.search(text)
-        if not match:
-            return []
+        # Try markdown code block first
+        md_pattern = re.compile(r'```(?:json)?\s*(\[.*?\])\s*```', re.DOTALL)
+        match = md_pattern.search(text)
+        if match:
+            json_str = match.group(1)
+        else:
+            # Fall back to raw JSON extraction
+            json_pattern = re.compile(r'\[.*\]', re.DOTALL)
+            match = json_pattern.search(text)
+            if not match:
+                return []
+            json_str = match.group(0)
 
         try:
-            data = json.loads(match.group(0))
+            data = json.loads(json_str)
             if not isinstance(data, list):
                 return []
-            # Validate each entry has model and rank
+            # Validate each entry has model and rank, rank is int in valid range
             valid = []
             for entry in data:
-                if isinstance(entry, dict) and "model" in entry and "rank" in entry:
-                    valid.append(entry)
+                if not isinstance(entry, dict):
+                    continue
+                if "model" not in entry or "rank" not in entry:
+                    continue
+                rank = entry["rank"]
+                if not isinstance(rank, int):
+                    continue
+                if not (1 <= rank <= len(survivors)):
+                    continue
+                valid.append(entry)
             valid.sort(key=lambda e: e["rank"])
+            # Ensure all survivors are present in rankings
+            ranked_models = {e["model"] for e in valid}
+            for survivor in survivors:
+                if survivor not in ranked_models:
+                    return []
             return valid
         except (json.JSONDecodeError, IndexError):
             return []
