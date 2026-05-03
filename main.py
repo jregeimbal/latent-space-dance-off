@@ -18,6 +18,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+from rich._spinners import SPINNERS
 
 from src.config import Config
 from src.model_manager import ModelManager
@@ -36,6 +37,12 @@ app = typer.Typer(
 
 console = Console()
 
+spinner_frames = ["◤", "▀", "◥", "▐", "◢", "▂", "◣", "▌"]
+# Register the custom spinner in the global SPINNERS dictionary
+SPINNERS["spinner_frames"] = {
+    "interval": 120,  # Milliseconds between frames
+    "frames": spinner_frames
+}
 
 def get_config(
     ollama_host: str = "http://localhost:11434",
@@ -168,7 +175,7 @@ async def _run_impl(
     console.print(f"\n[cyan]Generating SVGs for {len(model_clients)} models x {len(theme_list)} themes x {num_passes} passes...[/cyan]")
 
     with Progress(
-        SpinnerColumn(),
+        SpinnerColumn(spinner_name="spinner_frames", style="green"),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
         TaskProgressColumn(),
@@ -250,7 +257,7 @@ async def _run_impl(
         svg_judge_count = len(list(model_clients.values())) * len(svg_results)
         
         with Progress(
-            SpinnerColumn(),
+            SpinnerColumn(spinner_name="spinner_frames", style="green"),
             TextColumn("[progress.description]{task.description}"),
             BarColumn(),
             TaskProgressColumn(),
@@ -590,7 +597,7 @@ async def _tournament_impl(
 
     # Run tournament with live progress
     with Progress(
-        SpinnerColumn(),
+        SpinnerColumn(spinner_name="spinner_frames", style="green"),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
         TaskProgressColumn(),
