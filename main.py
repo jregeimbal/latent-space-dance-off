@@ -622,12 +622,12 @@ async def _tournament_impl(
 
     # Save tournament result
     result_path = tournament.save_result(result, str(run_dir))
-    console.print(f"[yellow]Tournament data saved to: {make_clickable_link(result_path)}[/yellow]", markup=False)
+    sys.stdout.write(f"\n[yellow]Tournament data saved to: {make_clickable_link(result_path)}[/yellow]\n")
 
     # Generate HTML report
     html_path = run_dir / "tournament_report.html"
     generate_tournament_html(result, html_path)
-    console.print(f"[yellow]Tournament report saved to: {make_clickable_link(html_path)}[/yellow]", markup=False)
+    sys.stdout.write(f"[yellow]Tournament report saved to: {make_clickable_link(html_path)}[/yellow]\n")
 
 
 if __name__ == "__main__":
