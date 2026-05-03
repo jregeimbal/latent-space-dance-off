@@ -656,6 +656,68 @@ def _render_judge_prompts(judgments: list) -> str:
     return "".join(blocks)
 
 
+def generate_tournament_html(result, output_path: Path) -> str:
+    """Generate an HTML report for tournament results."""
+    rounds_html = ""
+    for r in result.rounds:
+        rankings_html = ""
+        for rank_idx, (model, score) in enumerate(r.rankings, 1):
+            is_eliminated = model == r.eliminated
+            color = "#ff4444" if is_eliminated else "#4caf50"
+            rankings_html += f'<div style="padding:4px 8px;background:#252525;border-radius:4px;margin:2px 0;color:{color}">' \
+                           f'<strong>#{rank_idx}</strong> {html.escape(model)}' \
+                           f'{"" if not is_eliminated else " [ELIMINATED]"}' \
+                           f'</div>'
+
+        svgs_html = ""
+        for svg in r.svg_results:
+            if svg.status == "success" and svg.svg_code:
+                svgs_html += f'<div style="margin:8px 0"><strong>{html.escape(svg.model_name)}</strong><br>' \
+                           f'{svg.svg_code}</div>'
+
+        rounds_html += f'''
+        <div class="round-section">
+            <h3>Round {r.round_num}: {html.escape(r.theme)}</h3>
+            <div class="rankings">{rankings_html}</div>
+            <div class="round-svgs">{svgs_html}</div>
+        </div>
+        '''
+
+    html_content = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournament - {html.escape(result.champion or "Unknown")}</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f0f; color: #e0e0e0; padding: 20px; }}
+        .header {{ text-align: center; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 12px; border: 1px solid #333; }}
+        .header h1 {{ font-size: 2em; background: linear-gradient(90deg, #00d2ff, #3a7bd5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }}
+        .champion {{ font-size: 1.5em; color: #ffd700; margin-top: 10px; }}
+        .round-section {{ background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 20px; margin-bottom: 20px; }}
+        .round-section h3 {{ color: #b388ff; margin-bottom: 12px; }}
+        .rankings {{ display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }}
+        .round-svgs {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }}
+        .round-svgs div {{ background: #ffffff; border-radius: 8px; padding: 8px; }}
+        .round-svgs svg {{ max-width: 100%; height: auto; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Latent Space Dance Off - Tournament</h1>
+        <div class="champion">Champion: {html.escape(result.champion or "TBD")}</div>
+    </div>
+{rounds_html}
+</body>
+</html>'''
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(html_content)
+    return str(output_path)
+
+
 def generate_report_from_file(benchmark_json_path: str, output_dir: Optional[str] = None) -> str:
     """
     Generate HTML report from a benchmark.json file.
