@@ -607,9 +607,12 @@ async def _tournament_impl(
             # Show ASCII art for each model's SVG
             for svg in round_result.svg_results:
                 if svg.status == "success" and svg.svg_code:
-                    ascii_art = svg_to_ascii(svg.svg_code, width=80, use_ansi=True)
-                    console.print(f"  [cyan]{svg.model_name}:[/cyan]")
-                    console.print(ascii_art, markup=False, highlight=False)
+                    try:
+                        ascii_art = svg_to_ascii(svg.svg_code, width=80, use_ansi=True)
+                        console.print(f"  [cyan]{svg.model_name}:[/cyan]")
+                        console.print(ascii_art, markup=False, highlight=False)
+                    except Exception:
+                        console.print(f"  [dim]{svg.model_name}: [italic](SVG render skipped)[/italic][/dim]")
 
             console.print(f"  [red]Eliminated:[/red] [bold]{round_result.eliminated}[/bold]")
             console.print(f"  [green]Survivors:[/green] {', '.join(tournament.survivors)}")
