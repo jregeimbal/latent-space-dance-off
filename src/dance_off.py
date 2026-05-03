@@ -21,6 +21,8 @@ from src.svg_generator import SVGGenerator
 from src.theme_selector import ThemeSelector
 from src.round_judge import RoundJudge
 
+_RANKING_SCORE_SCALE = 10000.0
+
 
 @dataclass
 class RoundResult:
@@ -75,6 +77,9 @@ class DanceOffResult:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "DanceOffResult":
         """Deserialize from dict."""
+        for field in ("run_id", "timestamp", "models"):
+            if field not in data:
+                raise KeyError(f"Missing required field: {field}")
         rounds = []
         for r in data.get("rounds", []):
             svg_results = [
@@ -253,7 +258,7 @@ class DanceOff:
                 if successful:
                     avg_duration = sum(r.duration_ms for r in successful) / len(successful)
                     # Invert: lower duration = higher score
-                    score = max(1.0, 10000.0 / (avg_duration + 1))
+                    score = max(1.0, _RANKING_SCORE_SCALE / (avg_duration + 1))
                     rankings.append((model, score))
                 else:
                     rankings.append((model, 0.0))
@@ -266,7 +271,6 @@ class DanceOff:
         """Save dance-off result to JSON file."""
         run_dir = Path(output_dir)
         run_dir.mkdir(parents=True, exist_ok=True)
-        (run_dir / "assets").mkdir(parents=True, exist_ok=True)
 
         filepath = run_dir / "dance_off.json"
         with open(filepath, "w", encoding="utf-8") as f:

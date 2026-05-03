@@ -117,6 +117,17 @@ class TestDanceOffResult:
         assert len(tr2.rounds) == 1
         assert tr2.rounds[0].eliminated == "model_b"
 
+    def test_from_dict_missing_required_field_raises(self):
+        """DanceOffResult.from_dict raises KeyError for missing required fields."""
+        with pytest.raises(KeyError, match="run_id"):
+            DanceOffResult.from_dict({"timestamp": "2024-01-01", "models": []})
+
+        with pytest.raises(KeyError, match="timestamp"):
+            DanceOffResult.from_dict({"run_id": "test"})
+
+        with pytest.raises(KeyError, match="models"):
+            DanceOffResult.from_dict({"run_id": "test", "timestamp": "2024-01-01"})
+
 
 class TestDanceOff:
     def _make_mock_config(self, tmp_path):

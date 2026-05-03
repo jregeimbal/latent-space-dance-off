@@ -146,3 +146,13 @@ class TestRoundJudge:
         result = judge._parse_rankings(text, ["model_a", "model_b"])
 
         assert result == []
+
+    def test_fallback_elimination_returns_survivor(self):
+        """_fallback_elimination returns one of the survivors."""
+        mock_client = AsyncMock()
+        judge = RoundJudge(judge_client=mock_client, judge_model="test_judge")
+
+        with patch("random.choice", return_value="model_b"):
+            result = judge._fallback_elimination(["model_a", "model_b", "model_c"])
+
+        assert result == "model_b"
