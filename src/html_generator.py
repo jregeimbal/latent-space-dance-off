@@ -656,8 +656,8 @@ def _render_judge_prompts(judgments: list) -> str:
     return "".join(blocks)
 
 
-def generate_tournament_html(result, output_path: Path) -> str:
-    """Generate an HTML report for tournament results."""
+def generate_dance_off_html(result, output_path: Path) -> str:
+    """Generate an HTML report for dance-off results."""
     rounds_html = ""
     for r in result.rounds:
         rankings_html = ""
@@ -705,7 +705,7 @@ def generate_tournament_html(result, output_path: Path) -> str:
 </head>
 <body>
     <div class="header">
-        <h1>Latent Space Dance Off - Tournament</h1>
+        <h1>Latent Space Dance Off - Dance-Off</h1>
         <div class="champion">Champion: {html.escape(result.champion or "TBD")}</div>
     </div>
 {rounds_html}

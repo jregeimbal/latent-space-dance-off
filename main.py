@@ -26,7 +26,7 @@ from src.svg_generator import SVGGenerator
 from src.svg_judge import SVGJudge
 from src.ranking import RankingSystem, Leaderboard
 from src.benchmark import BenchmarkManager, BenchmarkRecord, RunData, SVGResult
-from src.html_generator import generate_benchmark_html, generate_tournament_html
+from src.html_generator import generate_benchmark_html, generate_dance_off_html
 from src.utils import format_duration, svg_to_ascii, make_clickable_link
 
 app = typer.Typer(
@@ -508,7 +508,7 @@ def runs(
 
 
 @app.command()
-def tournament(
+def dance_off(
     models: Optional[str] = typer.Option(None, "--models", "-m", help="Comma-separated model names to compete"),
     theme_pool: str = typer.Option("abstract,landscape,portrait,object,scene", "--theme-pool", "-tp", help="Comma-separated themes for audience-judge to pick from"),
     num_judges: int = typer.Option(1, "--judges", "-j", help="Number of judge models (1 for theme selection + round judging)"),
@@ -518,11 +518,11 @@ def tournament(
     llm_host: str = typer.Option("", "--llm-host", help="LLM server host URL"),
     svg_per_model: int = typer.Option(2, "--svg-per-model", "-s", help="SVGs each model generates per round"),
 ):
-    """Run a single-elimination tournament where models compete in free-for-all rounds. Each round: audience-judge picks a theme, all surviving models generate SVGs, round judge eliminates the worst."""
-    asyncio.run(_tournament_impl(models, theme_pool, num_judges, output_dir, ollama_host, client_type, llm_host, svg_per_model))
+    """Run a single-elimination dance-off where models compete in free-for-all rounds. Each round: audience-judge picks a theme, all surviving models generate SVGs, round judge eliminates the worst."""
+    asyncio.run(_dance_off_impl(models, theme_pool, num_judges, output_dir, ollama_host, client_type, llm_host, svg_per_model))
 
 
-async def _tournament_impl(
+async def _dance_off_impl(
     models: Optional[str],
     theme_pool: str,
     num_judges: int,
@@ -548,7 +548,7 @@ async def _tournament_impl(
 
     if len(model_list) < 2:
         console.print(Panel(
-            "[red]Need at least 2 models for a tournament.[/red]",
+            "[red]Need at least 2 models for a dance-off.[/red]",
             title="Not Enough Models"
         ))
         return
@@ -564,7 +564,7 @@ async def _tournament_impl(
             console.print(f"[red]Model {model_name} failed: {e}[/red]")
 
     if len(model_clients) < 2:
-        console.print("[red]Need at least 2 working models for a tournament.[/red]")
+        console.print("[red]Need at least 2 working models for a dance-off.[/red]")
         return
 
     # Create run directory using BenchmarkManager
@@ -574,19 +574,19 @@ async def _tournament_impl(
     assets_dir.mkdir(parents=True, exist_ok=True)
 
     console.print(Panel(
-        f"[bold green]Tournament Starting[/bold green]\n"
+        f"[bold green]Dance-Off Starting[/bold green]\n"
         f"Models: {', '.join(model_clients.keys())}\n"
         f"Theme pool: {', '.join(theme_list)}\n"
         f"SVGs per model per round: {svg_per_model}\n"
         f"Output: {run_dir}",
-        title="[bold]Latent Space Dance Off - Tournament[/bold]",
+        title="[bold]Latent Space Dance Off - Dance-Off[/bold]",
         border_style="green"
     ))
 
-    # Import Tournament here to avoid circular import at module level
-    from src.tournament import Tournament
+    # Import DanceOff here to avoid circular import at module level
+    from src.dance_off import DanceOff
 
-    tournament = Tournament(
+    dance_off = DanceOff(
         model_clients=model_clients,
         config=config,
         theme_pool=theme_list,
@@ -595,16 +595,16 @@ async def _tournament_impl(
         judge_model=model_list[0],
     )
 
-    # Run tournament with live progress
+    # Run dance-off with live progress
     with Progress(
         SpinnerColumn(spinner_name="spinner_frames", style="green"),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
         TaskProgressColumn(),
     ) as progress:
-        task = progress.add_task("Tournament...", total=None)
+        task = progress.add_task("Dance-Off...", total=None)
 
-        result = await tournament.run()
+        result = await dance_off.run()
 
         # Display round results
         for round_result in result.rounds:
@@ -623,19 +623,19 @@ async def _tournament_impl(
                         console.print(f"  [dim]{svg.model_name}: [italic](SVG render skipped)[/italic][/dim]")
 
             console.print(f"  [red]Eliminated:[/red] [bold]{round_result.eliminated}[/bold]")
-            console.print(f"  [green]Survivors:[/green] {', '.join(tournament.survivors)}")
+            console.print(f"  [green]Survivors:[/green] {', '.join(dance_off.survivors)}")
 
     # Display champion
     console.print(f"\n[bold green]=== CHAMPION: {result.champion} ===[/bold green]\n")
 
-    # Save tournament result
-    result_path = tournament.save_result(result, str(run_dir))
-    sys.stdout.write(f"\nTournament data saved to: {make_clickable_link(result_path)}\n")
+    # Save dance-off result
+    result_path = dance_off.save_result(result, str(run_dir))
+    sys.stdout.write(f"\nDance-off data saved to: {make_clickable_link(result_path)}\n")
 
     # Generate HTML report
-    html_path = run_dir / "tournament_report.html"
-    generate_tournament_html(result, html_path)
-    sys.stdout.write(f"Tournament report saved to: {make_clickable_link(html_path)}\n")
+    html_path = run_dir / "dance_off_report.html"
+    generate_dance_off_html(result, html_path)
+    sys.stdout.write(f"Dance-off report saved to: {make_clickable_link(html_path)}\n")
 
 
 if __name__ == "__main__":

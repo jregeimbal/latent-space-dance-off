@@ -124,10 +124,10 @@ python main.py leaderboard
 python main.py leaderboard 2026-04-29T12:00:00.000000
 ```
 
-### Run Tournament
+### Run Dance-Off
 
 ```bash
-python main.py tournament [OPTIONS]
+python main.py dance-off [OPTIONS]
 ```
 
 **Options:**
@@ -144,11 +144,11 @@ python main.py tournament [OPTIONS]
 **Example:**
 
 ```bash
-# Run a tournament between 3 models
-python main.py tournament --models llama3,gemma2,mistral
+# Run a dance-off between 3 models
+python main.py dance-off --models llama3,gemma2,mistral
 ```
 
-A tournament runs a single-elimination bracket where models compete in free-for-all rounds. In each round, an audience-judge picks a theme, all surviving models generate SVGs, and the worst is eliminated. The last model standing is crowned champion.
+A dance-off runs a single-elimination bracket where models compete in free-for-all rounds. In each round, an audience-judge picks a theme, all surviving models generate SVGs, and the worst is eliminated. The last model standing is crowned champion.
 
 ### Export Results
 

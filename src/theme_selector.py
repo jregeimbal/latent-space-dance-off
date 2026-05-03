@@ -1,5 +1,5 @@
 """
-Theme Selector - Audience-judge picks themes for tournament rounds.
+Theme Selector - Audience-judge picks themes for dance-off rounds.
 
 Uses a judge LLM to select themes from a pool, avoiding repeats from past rounds.
 """
@@ -10,7 +10,7 @@ from src.llm_client import BaseLLMClient, LLMChunk
 
 
 class ThemeSelector:
-    """Selects themes for tournament rounds using a judge LLM."""
+    """Selects themes for dance-off rounds using a judge LLM."""
 
     def __init__(self, judge_client: BaseLLMClient, judge_model: str) -> None:
         self.judge_client = judge_client
@@ -37,7 +37,7 @@ class ThemeSelector:
             available = pool  # Allow repeats if pool exhausted
 
         prompt = (
-            f"You are the audience judge for a tournament round. "
+            f"You are the audience judge for a dance-off round. "
             f"This is round {round_num}. "
             f"Available themes: {', '.join(pool)}. "
             f"Themes already used: {', '.join(used_themes) if used_themes else 'none'}. "

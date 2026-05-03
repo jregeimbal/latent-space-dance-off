@@ -1,4 +1,4 @@
-"""Tests for tournament module."""
+"""Tests for dance-off module."""
 
 import json
 from pathlib import Path
@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.tournament import RoundResult, Tournament, TournamentResult
+from src.dance_off import RoundResult, DanceOff, DanceOffResult
 from src.benchmark import SVGResult
 from tests.conftest import _run_async
 
@@ -44,9 +44,9 @@ class TestRoundResult:
         assert rr.svg_results[0].model_name == "model_a"
 
 
-class TestTournamentResult:
+class TestDanceOffResult:
     def test_to_dict(self):
-        tr = TournamentResult(
+        tr = DanceOffResult(
             run_id="test-run",
             timestamp="2024-01-01T00:00:00",
             models=["model_a", "model_b"],
@@ -74,7 +74,7 @@ class TestTournamentResult:
             eliminated="model_b",
             svg_results=[svg],
         )
-        tr = TournamentResult(
+        tr = DanceOffResult(
             run_id="test-run",
             timestamp="2024-01-01T00:00:00",
             models=["model_a", "model_b"],
@@ -103,7 +103,7 @@ class TestTournamentResult:
             eliminated="model_b",
             svg_results=[svg],
         )
-        tr = TournamentResult(
+        tr = DanceOffResult(
             run_id="test-run",
             timestamp="2024-01-01T00:00:00",
             models=["model_a", "model_b"],
@@ -111,16 +111,16 @@ class TestTournamentResult:
             champion="model_a",
         )
         d = tr.to_dict()
-        tr2 = TournamentResult.from_dict(d)
+        tr2 = DanceOffResult.from_dict(d)
         assert tr2.run_id == tr.run_id
         assert tr2.champion == tr.champion
         assert len(tr2.rounds) == 1
         assert tr2.rounds[0].eliminated == "model_b"
 
 
-class TestTournament:
+class TestDanceOff:
     def _make_mock_config(self, tmp_path):
-        """Create a minimal mock config for tournament tests."""
+        """Create a minimal mock config for dance-off tests."""
         from unittest.mock import Mock
         config = Mock()
         config.OUTPUT_DIR = str(tmp_path)
@@ -129,8 +129,8 @@ class TestTournament:
         config.LEADERBOARDS_DIR = tmp_path / "leaderboards"
         return config
 
-    def test_tournament_reduces_models_to_champion(self, tmp_path):
-        """Tournament eliminates models until one champion remains."""
+    def test_dance_off_reduces_models_to_champion(self, tmp_path):
+        """Dance-off eliminates models until one champion remains."""
         config = self._make_mock_config(tmp_path)
 
         # Mock SVG generation: all models succeed
@@ -144,7 +144,7 @@ class TestTournament:
             "model_c": mock_client_c,
         }
 
-        tournament = Tournament(
+        dance_off = DanceOff(
             model_clients=model_clients,
             config=config,
             theme_pool=["abstract", "landscape", "portrait"],
@@ -165,20 +165,20 @@ class TestTournament:
                 pass_number=1,
             )
 
-        with patch.object(tournament.svg_generator, "generate_svg", side_effect=make_svg_result):
+        with patch.object(dance_off.svg_generator, "generate_svg", side_effect=make_svg_result):
             # Mock theme selection to always return "abstract"
-            with patch.object(tournament, "_select_theme", return_value="abstract"):
+            with patch.object(dance_off, "_select_theme", return_value="abstract"):
                 # Mock round judging: eliminate model_b first, then model_c
-                with patch.object(tournament, "_judge_round", side_effect=["model_b", "model_c"]):
-                    result = _run_async(tournament.run())
+                with patch.object(dance_off, "_judge_round", side_effect=["model_b", "model_c"]):
+                    result = _run_async(dance_off.run())
 
         assert result.champion == "model_a"
         assert len(result.rounds) == 2
         assert result.rounds[0].eliminated == "model_b"
         assert result.rounds[1].eliminated == "model_c"
 
-    def test_tournament_two_models_one_round(self, tmp_path):
-        """Tournament with 2 models completes in 1 round."""
+    def test_dance_off_two_models_one_round(self, tmp_path):
+        """Dance-off with 2 models completes in 1 round."""
         config = self._make_mock_config(tmp_path)
 
         mock_client_a = AsyncMock()
@@ -186,7 +186,7 @@ class TestTournament:
 
         model_clients = {"model_a": mock_client_a, "model_b": mock_client_b}
 
-        tournament = Tournament(
+        dance_off = DanceOff(
             model_clients=model_clients,
             config=config,
             theme_pool=["abstract"],
@@ -206,33 +206,33 @@ class TestTournament:
                 pass_number=1,
             )
 
-        with patch.object(tournament.svg_generator, "generate_svg", side_effect=make_svg_result):
-            with patch.object(tournament, "_select_theme", return_value="abstract"):
-                with patch.object(tournament, "_judge_round", return_value="model_b"):
-                    result = _run_async(tournament.run())
+        with patch.object(dance_off.svg_generator, "generate_svg", side_effect=make_svg_result):
+            with patch.object(dance_off, "_select_theme", return_value="abstract"):
+                with patch.object(dance_off, "_judge_round", return_value="model_b"):
+                    result = _run_async(dance_off.run())
 
         assert result.champion == "model_a"
         assert len(result.rounds) == 1
 
     def test_save_result_writes_json(self, tmp_path):
-        """Tournament.save_result writes tournament.json to the output directory."""
-        tr = TournamentResult(
+        """DanceOff.save_result writes dance_off.json to the output directory."""
+        tr = DanceOffResult(
             run_id="test-run-123",
             timestamp="2024-01-01T00:00:00",
             models=["model_a"],
             champion="model_a",
         )
 
-        tournament = Tournament(
+        dance_off = DanceOff(
             model_clients={"dummy": AsyncMock()},
             config=MagicMock(),
             theme_pool=["abstract"],
             output_dir=str(tmp_path),
         )
 
-        filepath = tournament.save_result(tr, str(tmp_path))
+        filepath = dance_off.save_result(tr, str(tmp_path))
         assert filepath.exists()
-        assert filepath.name == "tournament.json"
+        assert filepath.name == "dance_off.json"
 
         with open(filepath) as f:
             data = json.load(f)
@@ -241,7 +241,7 @@ class TestTournament:
 
     def test_build_rankings_handles_failed_svgs(self, tmp_path):
         """_build_rankings puts models with failed SVGs at the bottom."""
-        tournament = Tournament(
+        dance_off = DanceOff(
             model_clients={"dummy": AsyncMock()},
             config=MagicMock(),
             theme_pool=["abstract"],
@@ -253,7 +253,7 @@ class TestTournament:
             SVGResult(model_name="model_b", theme="abstract", svg_code="", status="failed", pass_number=1),
         ]
 
-        rankings = tournament._build_rankings(svg_results, ["model_a", "model_b"])
+        rankings = dance_off._build_rankings(svg_results, ["model_a", "model_b"])
 
         # model_a should be first (success), model_b last (failed)
         assert rankings[0][0] == "model_a"

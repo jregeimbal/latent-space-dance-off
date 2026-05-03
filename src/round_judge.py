@@ -15,7 +15,7 @@ from src.llm_client import BaseLLMClient, LLMChunk
 
 
 class RoundJudge:
-    """Judges tournament rounds and determines which model to eliminate."""
+    """Judges dance-off rounds and determines which model to eliminate."""
 
     def __init__(self, judge_client: BaseLLMClient, judge_model: str) -> None:
         self.judge_client = judge_client
@@ -28,10 +28,10 @@ class RoundJudge:
         svg_map: Dict[str, List[str]],
         num_svg_per_model: int = 2,
     ) -> str:
-        """Judge a tournament round and return the model to eliminate.
+        """Judge a dance-off round and return the model to eliminate.
 
         Args:
-            survivors: List of model names still in the tournament.
+            survivors: List of model names still in the dance-off.
             theme: The theme all models generated SVGs for.
             svg_map: Dict mapping model_name -> list of SVG file paths.
             num_svg_per_model: Number of SVGs each model generated.
@@ -63,7 +63,7 @@ class RoundJudge:
         svg_display = "\n\n".join(svg_text_parts)
 
         prompt = (
-            f"You are judging a tournament round. All models created SVGs from the theme: '{theme}'.\n\n"
+            f"You are judging a dance-off round. All models created SVGs from the theme: '{theme}'.\n\n"
             f"Rank these models from best to worst. For each model, I'll show one of their SVGs.\n\n"
             f"{svg_display}\n\n"
             f"Respond with a JSON array of objects, one per model, ordered from best (rank 1) to worst (last):\n"

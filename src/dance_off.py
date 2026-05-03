@@ -1,7 +1,7 @@
 """
-Tournament module for latent-space-dance-off.
+Dance-off module for latent-space-dance-off.
 
-Orchestrates a single-elimination tournament where LLM models compete
+Orchestrates a single-elimination dance-off where LLM models compete
 in free-for-all rounds. Each round: audience-judge picks a theme, all
 surviving models generate SVGs, round judge eliminates the worst.
 """
@@ -24,7 +24,7 @@ from src.round_judge import RoundJudge
 
 @dataclass
 class RoundResult:
-    """Result of a single tournament round."""
+    """Result of a single dance-off round."""
     round_num: int
     theme: str
     rankings: List[tuple]  # List of (model_name, score) tuples, highest first
@@ -33,8 +33,8 @@ class RoundResult:
 
 
 @dataclass
-class TournamentResult:
-    """Complete tournament result."""
+class DanceOffResult:
+    """Complete dance-off result."""
     run_id: str
     timestamp: str
     models: List[str]
@@ -73,7 +73,7 @@ class TournamentResult:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "TournamentResult":
+    def from_dict(cls, data: Dict[str, Any]) -> "DanceOffResult":
         """Deserialize from dict."""
         rounds = []
         for r in data.get("rounds", []):
@@ -106,8 +106,8 @@ class TournamentResult:
         )
 
 
-class Tournament:
-    """Orchestrates a single-elimination tournament."""
+class DanceOff:
+    """Orchestrates a single-elimination dance-off."""
 
     def __init__(
         self,
@@ -133,11 +133,11 @@ class Tournament:
         self.champion: Optional[str] = None
         self.judge_model = judge_model or (self.models[0] if self.models else "llama3")
 
-    async def run(self) -> TournamentResult:
-        """Run the full tournament.
+    async def run(self) -> DanceOffResult:
+        """Run the full dance-off.
 
         Returns:
-            TournamentResult with all rounds and the champion.
+            DanceOffResult with all rounds and the champion.
         """
         used_themes: List[str] = []
         round_num = 1
@@ -190,7 +190,7 @@ class Tournament:
         # Champion is the last survivor
         self.champion = self.survivors[0] if self.survivors else None
 
-        return TournamentResult(
+        return DanceOffResult(
             run_id=self.run_id,
             timestamp=self.timestamp,
             models=self.models,
@@ -262,13 +262,13 @@ class Tournament:
         rankings.sort(key=lambda x: x[1], reverse=True)
         return rankings
 
-    def save_result(self, result: TournamentResult, output_dir: str) -> Path:
-        """Save tournament result to JSON file."""
+    def save_result(self, result: DanceOffResult, output_dir: str) -> Path:
+        """Save dance-off result to JSON file."""
         run_dir = Path(output_dir)
         run_dir.mkdir(parents=True, exist_ok=True)
         (run_dir / "assets").mkdir(parents=True, exist_ok=True)
 
-        filepath = run_dir / "tournament.json"
+        filepath = run_dir / "dance_off.json"
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(result.to_dict(), f, indent=2)
         return filepath
