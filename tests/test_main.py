@@ -93,3 +93,22 @@ class TestParseModels:
     def test_whitespace_only_entries_filtered(self):
         result = parse_models("m1,  ,,,m2")
         assert result == ["m1", "m2"]
+
+
+class TestTournamentCommand:
+    def test_tournament_help_shows_options(self, cli_runner):
+        """Tournament command --help shows all options."""
+        from main import app
+        result = cli_runner.invoke(app, ["tournament", "--help"])
+        assert result.exit_code == 0
+        assert "--models" in result.output
+        assert "--theme-pool" in result.output
+        assert "--judges" in result.output
+        assert "--output" in result.output
+        assert "--svg-per-model" in result.output
+
+    def test_tournament_command_exists(self, cli_runner):
+        """Tournament command is registered in the app."""
+        from main import app
+        command_names = [c.callback.__name__ for c in app.registered_commands if c.callback]
+        assert "tournament" in command_names
