@@ -223,18 +223,30 @@ class DanceOff:
         theme: str,
         svg_map: Dict[str, List[str]],
     ) -> str:
-        """Judge a round and return the model to eliminate."""
+        """Judge a round and return the model to eliminate.
+
+        If the judge returns an invalid elimination target (not in
+        survivors), fall back to removing the last survivor as a
+        safe default.
+        """
         judge_client = next(iter(self.model_clients.values()))
         round_judge = RoundJudge(
             judge_client=judge_client,
             judge_model=self.judge_model,
         )
-        return await round_judge.judge_round(
+        eliminated = await round_judge.judge_round(
             survivors=survivors,
             theme=theme,
             svg_map=svg_map,
             num_svg_per_model=self.svg_per_model,
         )
+        if eliminated not in survivors:
+            print(
+                f"[WARN] Judge returned invalid elimination target "
+                f"'{eliminated}', falling back"
+            )
+            eliminated = survivors[-1]
+        return eliminated
 
     def _build_rankings(
         self,
