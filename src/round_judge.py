@@ -127,6 +127,8 @@ class RoundJudge:
                 if not (1 <= rank <= len(survivors)):
                     continue
                 valid.append(entry)
+            # Filter to only entries referencing known survivors
+            valid = [e for e in valid if e["model"] in set(survivors)]
             # Check for duplicate ranks
             ranks = [e["rank"] for e in valid]
             if len(ranks) != len(set(ranks)):
