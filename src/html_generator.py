@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel
 
+from src.utils import calculate_tokens_per_second
+
 
 class SVGCellData(BaseModel):
     """Data for a single cell in the benchmark grid."""
@@ -22,13 +24,6 @@ class SVGCellData(BaseModel):
     tokens_used: Optional[int] = None
     status: str = "success"
     error_message: Optional[str] = None
-
-
-def calculate_tokens_per_second(tokens: Optional[int], duration_ms: float) -> float:
-    """Calculate tokens per second from token count and duration."""
-    if duration_ms > 0 and tokens is not None:
-        return tokens / (duration_ms / 1000.0)
-    return 0.0
 
 
 def format_duration(ms: float) -> str:

@@ -112,11 +112,11 @@ def write_svg(svg, filepath):
         f.write(svg)
 
 
-def calculate_tokens_per_second(tokens, duration_ms):
-    """Calculate tokens per second rate."""
-    if duration_ms <= 0:
-        return 0.0
-    return tokens / (duration_ms / 1000.0)
+def calculate_tokens_per_second(tokens: Optional[int], duration_ms: float) -> float:
+    """Calculate tokens per second from token count and duration in milliseconds."""
+    if duration_ms > 0 and tokens is not None:
+        return tokens / (duration_ms / 1000.0)
+    return 0.0
 
 
 # ─── SVG → ASCII art ─────────────────────────────────────────────────────────
