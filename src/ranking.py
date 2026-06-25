@@ -12,19 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # Import Config from src.config
 from src.config import Config
-
-
-@dataclass
-class Judgment:
-    svg_id: str
-    svg_model_name: str
-    judged_by: str
-    creativity_score: Optional[float] = None
-    aesthetics_score: Optional[float] = None
-    complexity_score: Optional[float] = None
-    reason: Optional[str] = None
-    rank: Optional[int] = None
-    winner_svg: Optional[str] = None
+from src.svg_judge import Judgment
 
 
 @dataclass
@@ -42,13 +30,10 @@ class RunData:
 class SVGScore:
     svg_id: str
     model_name: str
-    creativity_score: float = 0.0
-    aesthetics_score: float = 0.0
-    complexity_score: float = 0.0
     total_score: float = 0.0
     judgment_count: int = 0
-    scores: Optional[dict] = None    # Dynamic scores for custom criteria
-    
+    scores: Optional[dict] = None
+
     def __post_init__(self):
         if self.scores is None:
             self.scores = {}
@@ -137,28 +122,13 @@ class RankingSystem:
             
             svg_score = scores[resolved_model]
             
-               # Handle both old format (individual scores) and new format (scores dict)
-            if hasattr(judgment, 'scores') and judgment.scores:
-                   # New format with dynamic scores
+            # Only handle scores dict format (canonical from svg_judge.Judgment)
+            if judgment.scores:
                 for criterion in self.config.judging_criteria:
                     if judgment.scores.get(criterion) is not None:
                         if criterion not in svg_score.scores:
                             svg_score.scores[criterion] = 0.0
                         svg_score.scores[criterion] += judgment.scores[criterion]
-            else:
-                   # Old format with individual scores
-                if judgment.creativity_score is not None:
-                    if 'creativity' not in svg_score.scores:
-                        svg_score.scores['creativity'] = 0.0
-                    svg_score.scores['creativity'] += judgment.creativity_score
-                if judgment.aesthetics_score is not None:
-                    if 'aesthetics' not in svg_score.scores:
-                        svg_score.scores['aesthetics'] = 0.0
-                    svg_score.scores['aesthetics'] += judgment.aesthetics_score
-                if judgment.complexity_score is not None:
-                    if 'complexity' not in svg_score.scores:
-                        svg_score.scores['complexity'] = 0.0
-                    svg_score.scores['complexity'] += judgment.complexity_score
             svg_score.judgment_count += 1
         
         for svg_id in scores:
@@ -226,13 +196,15 @@ class RankingSystem:
         if filepath is None:
             filepath = self.config.leaderboards_dir / f"{leaderboard.run_id}.csv"
         (Path(filepath)).parent.mkdir(parents=True, exist_ok=True)
-        headers = ['rank', 'model', 'creativity', 'aesthetics', 'complexity', 'total']
+        criteria_headers = self.config.judging_criteria if hasattr(self.config, 'judging_criteria') else ['creativity', 'aesthetics', 'complexity']
+        headers = ['rank', 'model'] + criteria_headers + ['total']
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(','.join(headers) + chr(10))
             for entry in leaderboard.rankings:
-                row = [str(entry.rank), entry.svg_id,
-                       f"{entry.get_score('creativity'):.2f}", f"{entry.get_score('aesthetics'):.2f}",
-                       f"{entry.get_score('complexity'):.2f}", f"{entry.total_score:.2f}"]
+                row = [str(entry.rank), entry.svg_id]
+                for criterion in criteria_headers:
+                    row.append(f"{entry.get_score(criterion):.2f}")
+                row.append(f"{entry.total_score:.2f}")
                 f.write(','.join(row) + chr(10))
         return str(filepath)
     
@@ -245,8 +217,9 @@ class RankingSystem:
     def get_svg_stats(self, leaderboard, svg_id):
         for entry in leaderboard.rankings:
             if entry.svg_id == svg_id:
-                return {'rank': entry.rank, 'creativity': entry.get_score('creativity'),
-                         'aesthetics': entry.get_score('aesthetics'), 'complexity': entry.get_score('complexity'),
-                         'total': entry.total_score, 'judgments_received': entry.judgment_count,
-                         'svg_files': entry.svg_files}
+                stats = {'rank': entry.rank, 'total': entry.total_score, 'judgments_received': entry.judgment_count,
+                          'svg_files': entry.svg_files}
+                for criterion in self.config.judging_criteria:
+                    stats[criterion] = entry.get_score(criterion)
+                return stats
         return None
