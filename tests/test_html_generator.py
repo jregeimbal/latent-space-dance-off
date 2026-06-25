@@ -372,6 +372,66 @@ class TestBuildHtml:
         )
         assert "my-run" in result
 
+    def test_empty_models_returns_error_page(self):
+        svg_lookup = {}
+        judgments_lookup = {}
+        result = _build_html(
+            run_id="run-empty",
+            timestamp="2024-01-01",
+            models=[],
+            themes=["theme-1"],
+            svg_lookup=svg_lookup,
+            judgments_lookup=judgments_lookup,
+        )
+        assert "No data to display" in result
+        assert "models" in result
+        assert "<!DOCTYPE html>" in result
+        assert 'class="error"' in result
+
+    def test_empty_themes_returns_error_page(self):
+        svg_lookup = {}
+        judgments_lookup = {}
+        result = _build_html(
+            run_id="run-empty",
+            timestamp="2024-01-01",
+            models=["model_a"],
+            themes=[],
+            svg_lookup=svg_lookup,
+            judgments_lookup=judgments_lookup,
+        )
+        assert "No data to display" in result
+        assert "themes" in result
+        assert "<!DOCTYPE html>" in result
+
+    def test_both_empty_returns_error_page(self):
+        svg_lookup = {}
+        judgments_lookup = {}
+        result = _build_html(
+            run_id="run-empty",
+            timestamp="2024-01-01",
+            models=[],
+            themes=[],
+            svg_lookup=svg_lookup,
+            judgments_lookup=judgments_lookup,
+        )
+        assert "No data to display" in result
+        assert "models" in result
+        assert "themes" in result
+
+    def test_valid_models_and_themes_not_error_page(self):
+        svg_lookup = {}
+        judgments_lookup = {}
+        result = _build_html(
+            run_id="run-1",
+            timestamp="2024-01-01",
+            models=["model_a"],
+            themes=["theme-1"],
+            svg_lookup=svg_lookup,
+            judgments_lookup=judgments_lookup,
+        )
+        assert "No data to display" not in result
+        assert 'class="grid-container"' in result
+
 
 # --- generate_benchmark_html ---
 
