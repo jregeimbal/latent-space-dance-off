@@ -221,8 +221,7 @@ async def _run_impl(
         console.print(f"  File: {make_clickable_link(result.svg_path)}", markup=False, highlight=False)
         if result.status == "success" and result.svg_code:
             ascii_art = svg_to_ascii(result.svg_code, width=100, use_ansi=True)
-            import sys
-            sys.stdout.write(ascii_art + "\n")
+            console.print(ascii_art, markup=False)
 
     run_data = RunData(
         run_id=run_id,
@@ -617,8 +616,7 @@ async def _dance_off_impl(
                     try:
                         ascii_art = svg_to_ascii(svg.svg_code, width=80, use_ansi=True)
                         console.print(f"  [cyan]{svg.model_name}:[/cyan]")
-                        import sys
-                        sys.stdout.write(ascii_art + "\n")
+                        console.print(ascii_art, markup=False)
                     except Exception:
                         console.print(f"  [dim]{svg.model_name}: [italic](SVG render skipped)[/italic][/dim]")
 
