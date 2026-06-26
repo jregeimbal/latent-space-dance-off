@@ -7,6 +7,7 @@ with models on the X-axis and themes on the Y-axis.
 
 import json
 import html
+import base64
 from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel
@@ -235,7 +236,7 @@ def _build_html(run_id: str, timestamp: str, models: List[str],
             overflow: hidden;
             min-height: 200px;
         }}
-        .svg-container svg {{
+        .svg-container img {{
             max-width: 100%;
             max-height: 280px;
             width: auto;
@@ -563,7 +564,7 @@ def _build_pass_selector_cell(model: str, theme: str, pass_options: list) -> str
         
         pass_contents += f'''        <div class="pass-content" data-pass="{opt["pass_number"]}" style="{display}">
             <div class="svg-container">
-                {opt["svg_code"]}
+                <img src="data:image/svg+xml;base64,{base64.b64encode(opt['svg_code'].encode('utf-8')).decode('utf-8')}" />
             </div>
             <div class="cell-stats">
                 <div class="stat">
@@ -672,8 +673,10 @@ def generate_dance_off_html(result, output_path: Path) -> str:
         svgs_html = ""
         for svg in r.svg_results:
             if svg.status == "success" and svg.svg_code:
+                svg_base64 = base64.b64encode(svg.svg_code.encode('utf-8')).decode('utf-8')
                 svgs_html += f'<div style="margin:8px 0"><strong>{html.escape(svg.model_name)}</strong><br>' \
-                           f'{svg.svg_code}</div>'
+                             f'<img src="data:image/svg+xml;base64,{svg_base64}" /></div>'
+
 
         rounds_html += f'''
         <div class="round-section">
@@ -700,7 +703,7 @@ def generate_dance_off_html(result, output_path: Path) -> str:
         .rankings {{ display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }}
         .round-svgs {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }}
         .round-svgs div {{ background: #ffffff; border-radius: 8px; padding: 8px; }}
-        .round-svgs svg {{ max-width: 100%; height: auto; }}
+        .round-svgs img {{ max-width: 100%; height: auto; }}
     </style>
 </head>
 <body>
