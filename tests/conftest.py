@@ -113,12 +113,16 @@ def sample_run_data(temp_output_dir):
 
 def _run_async(coro):
     """Helper to run an async coroutine in a test without pytest-asyncio."""
+    old_loop = asyncio.get_event_loop_policy().get_event_loop()
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
         return loop.run_until_complete(coro)
     finally:
-        asyncio.set_event_loop(None)
+        if old_loop is not None:
+            asyncio.set_event_loop(old_loop)
+        else:
+            asyncio.set_event_loop(None)
         loop.close()
 
 
