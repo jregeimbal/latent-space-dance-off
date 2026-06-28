@@ -9,9 +9,9 @@ import json
 import random
 import re
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
-from src.llm_client import BaseLLMClient, LLMChunk
+from src.llm_client import BaseLLMClient
 
 
 class RoundJudge:

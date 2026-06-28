@@ -6,12 +6,9 @@ and judge each other's work.
 """
 
 import asyncio
-import html
-import json
 import sys
 import time
-from pathlib import Path
-from typing import Callable, List, Optional
+from typing import List, Optional
 
 import typer
 from rich.console import Console
@@ -24,7 +21,7 @@ from src.config import Config
 from src.model_manager import ModelManager
 from src.svg_generator import SVGGenerator
 from src.svg_judge import SVGJudge
-from src.ranking import RankingSystem, Leaderboard
+from src.ranking import RankingSystem
 from src.benchmark import BenchmarkManager, BenchmarkRecord, RunData, SVGResult
 from src.html_generator import generate_benchmark_html, generate_dance_off_html
 from src.utils import format_duration, svg_to_ascii, make_clickable_link
@@ -270,7 +267,7 @@ async def _run_impl(
             
             judgments = await svg_judge.run_all_judgments(model_clients, svg_results, num_judges, progress, judge_task)
             run_data.judgments = judgments
-            aggregated = svg_judge.aggregate_judgments(svg_results, judgments)
+            _aggregated = svg_judge.aggregate_judgments(svg_results, judgments)
 
         benchmark_manager.save_run_data(run_data)
         sys.stdout.write(f"\nBenchmark data saved to: {make_clickable_link(run_dir / 'benchmark.json')}\n")

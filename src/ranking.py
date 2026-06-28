@@ -11,7 +11,6 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 # Import Config from src.config
-from src.config import Config
 
 
 @dataclass

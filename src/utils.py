@@ -1,8 +1,13 @@
 """Utility functions for latent-space-dance-off."""
 
+import contextlib
+import io
+import os
 import re
-from pathlib import Path
-from typing import Optional
+import tempfile
+
+import cairosvg
+from PIL import Image
 
 
 def parse_svg_from_response(text):
@@ -119,15 +124,8 @@ def calculate_tokens_per_second(tokens, duration_ms):
     return tokens / (duration_ms / 1000.0)
 
 
+
 # ─── SVG → ASCII art ─────────────────────────────────────────────────────────
-
-import io
-import os
-import tempfile
-import contextlib
-import cairosvg
-from PIL import Image
-
 
 def make_clickable_link(path: str | os.PathLike[str], text: str | None = None) -> str:
     """Wrap text in OSC 8 terminal hyperlink escape sequences."""

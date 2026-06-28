@@ -49,6 +49,7 @@ target-version = ["py39", "py310", "py311"]
 dev = [
      "pytest",
      "pytest-asyncio",
+     "ruff",
 ]
 
 [tool.pytest.ini_options]

@@ -7,13 +7,11 @@ surviving models generate SVGs, round judge eliminates the worst.
 """
 
 import json
-import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel
 
 from src.benchmark import SVGResult
 from src.llm_client import BaseLLMClient
@@ -77,9 +75,9 @@ class DanceOffResult:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "DanceOffResult":
         """Deserialize from dict."""
-        for field in ("run_id", "timestamp", "models"):
-            if field not in data:
-                raise KeyError(f"Missing required field: {field}")
+        for key in ("run_id", "timestamp", "models"):
+            if key not in data:
+                raise KeyError(f"Missing required field: {key}")
         rounds = []
         for r in data.get("rounds", []):
             svg_results = [

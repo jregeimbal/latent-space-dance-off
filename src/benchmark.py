@@ -192,7 +192,7 @@ class BenchmarkManager:
                 return None
             sorted_files = sorted(files, key=lambda f: f.stem, reverse=True)
             return sorted_files[0].stem
-        except:
+        except Exception:
             return None
     
     def get_all_runs(self):
@@ -205,16 +205,16 @@ class BenchmarkManager:
                     if benchmark_file.exists():
                         try:
                             runs.append(self.load_run_data(run_dir.name))
-                        except:
+                        except Exception:
                             continue
             # Fallback: flat benchmark JSON files
             for filepath in self.output_dir.glob("*.json"):
                 if filepath.is_file():
                     try:
                         runs.append(self.load_run_data(filepath.stem))
-                    except:
+                    except Exception:
                         continue
-        except:
+        except Exception:
             pass 
         return sorted(runs, key=lambda r: r.run_id)
     def start_timer(self):

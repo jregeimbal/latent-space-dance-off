@@ -6,7 +6,7 @@ across different LLM backends (Ollama, LM Studio, etc.).
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, AsyncIterator, Dict, List, Optional, Union
+from typing import Any, AsyncIterator, Dict, Optional, Union
 
 from rich.console import Console
 import httpx
@@ -138,7 +138,7 @@ class _OllamaHttpClient(BaseLLMClient):
             async for line in response.aiter_lines():
                 if not line or not line.startswith("{"):
                     continue
-                data_str = line;
+                data_str = line
                 if not data_str:
                     continue
                 try:
@@ -149,7 +149,7 @@ class _OllamaHttpClient(BaseLLMClient):
                         eval_count=data.get("eval_count"),
                         prompt_eval_count=data.get("prompt_eval_count"),
                     )
-                except json.JSONDecodeError as e:
+                except json.JSONDecodeError:
                     continue
 
     async def list(self) -> Dict[str, Any]:

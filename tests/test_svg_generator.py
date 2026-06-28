@@ -1,10 +1,8 @@
 """Tests for src/svg_generator.py."""
 
-from pathlib import Path
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock
 
 import pytest
-from pydantic import ValidationError
 
 from src.llm_client import LLMChunk
 from src.svg_generator import SVGGenerator, SVGResult

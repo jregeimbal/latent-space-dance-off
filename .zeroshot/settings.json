@@ -1,0 +1,16 @@
+{
+  "ship": {
+    "requiredQualityGates": [
+      {
+        "id": "tests",
+        "description": "Install dev dependencies and run all tests",
+        "command": "pip install -e '.[dev]' -q && pytest"
+      },
+      {
+        "id": "lint",
+        "description": "Install dev dependencies and run ruff linter",
+        "command": "pip install -e '.[dev]' -q && ruff check ."
+      }
+    ]
+  }
+}

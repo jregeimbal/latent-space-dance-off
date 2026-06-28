@@ -8,11 +8,11 @@ import asyncio
 import re
 import time
 from pathlib import Path
-from typing import AsyncIterator, Dict, List, Optional, Tuple, cast
+from typing import AsyncIterator, Dict, List, Optional, cast
 
-from typing import Callable, Optional
+from typing import Callable
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from src.llm_client import BaseLLMClient, LLMChunk
 from rich.console import Console
@@ -156,7 +156,8 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
 
         prompt_func = prompts.get(theme)
         if not prompt_func:
-            prompt_func = lambda model_name: self.generate_generic_svg_prompt(theme, model_name)
+            def prompt_func(model_name):
+                return self.generate_generic_svg_prompt(theme, model_name)
 
         return prompt_func(model_name)
 
@@ -209,7 +210,6 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
 
             last_chunk = None
             tokens_evaluated = None
-            prompt_tokens_evaluated = None
             async for chunk in streamed_response:
                 chunk_text = getattr(chunk, 'response', '') or ''
                 full_streamed_text += chunk_text
@@ -217,9 +217,6 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
                 eval_count = getattr(chunk, 'eval_count', None)
                 if eval_count is not None:
                     tokens_evaluated = eval_count
-                prompt_eval_count = getattr(chunk, 'prompt_eval_count', None)
-                if prompt_eval_count is not None:
-                    prompt_tokens_evaluated = prompt_eval_count
                 if progress_callback and chunk_text:
                     cleaned = re.sub(r'[\x00-\x1f\x7f]', '', chunk_text)
                     if cleaned:

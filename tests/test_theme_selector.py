@@ -2,7 +2,6 @@
 
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
 
 from src.theme_selector import ThemeSelector
 from tests.conftest import _run_async

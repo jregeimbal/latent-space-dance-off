@@ -3,7 +3,6 @@
 import json
 import time
 from pathlib import Path
-from unittest.mock import Mock
 
 import pytest
 from pydantic import ValidationError

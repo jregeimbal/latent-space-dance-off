@@ -4,9 +4,9 @@ Theme Selector - Audience-judge picks themes for dance-off rounds.
 Uses a judge LLM to select themes from a pool, avoiding repeats from past rounds.
 """
 
-from typing import List, Optional
+from typing import List
 
-from src.llm_client import BaseLLMClient, LLMChunk
+from src.llm_client import BaseLLMClient
 
 
 class ThemeSelector:

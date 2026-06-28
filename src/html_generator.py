@@ -548,7 +548,6 @@ def _build_pass_selector_cell(model: str, theme: str, pass_options: list) -> str
         duration_str = format_duration(opt["duration_ms"])
         tokens_str = f"{opt['tokens']:,}" if opt["tokens"] is not None else "N/A"
         tps_str = f"{opt['tps']:.1f}" if opt["tps"] > 0 else "N/A"
-        score_str = f"{opt['avg_score']:.2f}" if opt["avg_score"] is not None else ""
         judge_blocks_html = _render_judge_prompts(opt["judgments"]) if opt["judgments"] else ""
         judge_section = ""
         if judge_blocks_html:

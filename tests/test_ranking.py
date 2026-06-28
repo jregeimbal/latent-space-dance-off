@@ -1,6 +1,5 @@
 """Tests for the ranking module (src/ranking.py)."""
 
-from datetime import datetime
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -11,7 +10,6 @@ from src.ranking import (
     Leaderboard,
     LeaderboardEntry,
     RankingSystem,
-    RunData,
     SVGScore,
 )
 
@@ -219,7 +217,7 @@ class TestRankingSystem:
 
     def test_init_creates_dirs_with_real_paths(self, temp_output_dir):
         config, tmp_path = temp_output_dir
-        system = RankingSystem(config)
+        _system = RankingSystem(config)
         assert config.leaderboards_dir.is_dir()
         assert config.svgs_dir.is_dir()
 

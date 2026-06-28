@@ -4,7 +4,6 @@ Configuration module for latent-space-dance-off.
 Loads and manages application configuration from environment variables.
 """
 
-import os
 from pathlib import Path
 from typing import List
 

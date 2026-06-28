@@ -225,7 +225,6 @@ Respond with ONLY the JSON."""
                                  num_judges: Optional[int] = None, 
                                  progress: Optional[Progress] = None,
                                  judge_task: Optional[TaskID] = None) -> List[Judgment]:
-        judge_count = num_judges or self.num_judges
         judgments = []
         svg_list = svg_results.copy()
         random.shuffle(svg_list)
