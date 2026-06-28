@@ -43,8 +43,7 @@ class TestJudgment:
         assert judgment.svg_id == "svg-001"
         assert judgment.creativity_score == pytest.approx(0.9)
         assert judgment.aesthetics_score == pytest.approx(0.8)
-        assert judgment.complexity_score == pytest.approx(0.7)
-        assert not hasattr(judgment, "scores")
+        assert judgment.scores == {}
 
     def test_creation_with_minimal_fields(self):
         judgment = Judgment(
@@ -55,8 +54,7 @@ class TestJudgment:
         assert judgment.svg_id == "svg-001"
         assert judgment.creativity_score is None
         assert judgment.aesthetics_score is None
-        assert judgment.complexity_score is None
-        assert not hasattr(judgment, "scores")
+        assert judgment.scores == {}
 
 
 # -- SVGScore tests --
