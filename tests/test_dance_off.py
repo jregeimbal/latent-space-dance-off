@@ -270,3 +270,31 @@ class TestDanceOff:
         assert rankings[0][0] == "model_a"
         assert rankings[1][0] == "model_b"
         assert rankings[1][1] == 0.0
+
+    @pytest.mark.asyncio
+    async def test_judge_round_fallback_on_invalid_model(self, tmp_path):
+        """_judge_round uses fallback when judge returns an invalid model."""
+        config = self._make_mock_config(tmp_path)
+        model_clients = {"model_a": AsyncMock(), "model_b": AsyncMock()}
+        dance_off = DanceOff(
+            model_clients=model_clients,
+            config=config,
+            theme_pool=["abstract"],
+            output_dir=str(tmp_path),
+        )
+
+        survivors = ["model_a", "model_b"]
+        theme = "abstract"
+        svg_map = {"model_a": ["path/a.svg"], "model_b": ["path/b.svg"]}
+        # model_a faster (100ms), model_b slower (200ms) -> model_b lowest score
+        svg_results = [
+            SVGResult(model_name="model_a", theme=theme, svg_code=FAKE_SVG, status="success", duration_ms=100.0, pass_number=1),
+            SVGResult(model_name="model_b", theme=theme, svg_code=FAKE_SVG, status="success", duration_ms=200.0, pass_number=1),
+        ]
+        rankings = dance_off._build_rankings(svg_results, survivors)
+
+        with patch("src.dance_off.RoundJudge.judge_round", return_value="invalid_model", new_callable=AsyncMock):
+            eliminated = await dance_off._judge_round(survivors, theme, svg_map, rankings)
+
+        assert eliminated == "model_b"
+

@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
+from rich.console import Console
 
 from src.benchmark import SVGResult
 from src.llm_client import BaseLLMClient
@@ -170,13 +171,13 @@ class DanceOff:
                     if result.svg_path:
                         svg_map.setdefault(model_name, []).append(result.svg_path)
 
-            # Round judging
-            eliminated = await self._judge_round(
-                self.survivors, theme, svg_map
-            )
-
             # Build rankings from SVG results
             rankings = self._build_rankings(svg_results, self.survivors)
+
+            # Round judging
+            eliminated = await self._judge_round(
+                self.survivors, theme, svg_map, rankings
+            )
 
             # Record round result
             round_result = RoundResult(
@@ -222,6 +223,7 @@ class DanceOff:
         survivors: List[str],
         theme: str,
         svg_map: Dict[str, List[str]],
+        rankings: List[tuple],
     ) -> str:
         """Judge a round and return the model to eliminate."""
         judge_client = next(iter(self.model_clients.values()))
@@ -229,12 +231,19 @@ class DanceOff:
             judge_client=judge_client,
             judge_model=self.judge_model,
         )
-        return await round_judge.judge_round(
+        eliminated_model = await round_judge.judge_round(
             survivors=survivors,
             theme=theme,
             svg_map=svg_map,
             num_svg_per_model=self.svg_per_model,
         )
+
+        if eliminated_model not in survivors:
+            console = Console()
+            console.print(f"[red]Judge returned invalid model '{eliminated_model}'[/red]")
+            eliminated_model = rankings[-1][0]
+
+        return eliminated_model
 
     def _build_rankings(
         self,
