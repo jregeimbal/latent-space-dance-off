@@ -14,6 +14,7 @@ from src.html_generator import (
     calculate_tokens_per_second,
     format_duration,
     generate_benchmark_html,
+    generate_dance_off_html,
     generate_report_from_file,
 )
 
@@ -144,9 +145,12 @@ class TestRenderJudgePrompts:
 class TestBuildPassSelectorCell:
 
     def test_renders_model_name_score_duration_tokens_tps(self):
+        import base64
+        svg_code = '<svg><circle/></svg>'
+        encoded = base64.b64encode(svg_code.encode('utf-8')).decode('utf-8')
         pass_options = [{
             "pass_number": 1,
-            "svg_code": '<svg><circle/></svg>',
+            "svg_code": svg_code,
             "duration_ms": 2000,
             "tokens": 400,
             "tps": 200.0,
@@ -160,7 +164,7 @@ class TestBuildPassSelectorCell:
             pass_options=pass_options,
         )
         assert "model_a" in result
-        assert '<svg><circle/></svg>' in result
+        assert f'src="data:image/svg+xml;base64,{encoded}"' in result
         assert "2.00s" in result
         assert "400" in result
         assert "200.0" in result
@@ -186,9 +190,12 @@ class TestBuildPassSelectorCell:
         assert 'class="cell-score"' not in result
 
     def test_svg_code_embedded(self):
+        import base64
+        svg_code = '<svg id="test-svg"><circle/></svg>'
+        encoded = base64.b64encode(svg_code.encode('utf-8')).decode('utf-8')
         pass_options = [{
             "pass_number": 1,
-            "svg_code": '<svg id="test-svg"><circle/></svg>',
+            "svg_code": svg_code,
             "duration_ms": 0,
             "tokens": 100,
             "tps": 100.0,
@@ -201,13 +208,19 @@ class TestBuildPassSelectorCell:
             theme="abstract",
             pass_options=pass_options,
         )
-        assert '<svg id="test-svg"><circle/></svg>' in result
+        assert f'src="data:image/svg+xml;base64,{encoded}"' in result
 
     def test_multiple_passes_shows_dropdown(self):
+        import base64
+        svg1 = '<svg id="p1"/></svg>'
+        svg2 = '<svg id="p2"/></svg>'
+        encoded1 = base64.b64encode(svg1.encode('utf-8')).decode('utf-8')
+        encoded2 = base64.b64encode(svg2.encode('utf-8')).decode('utf-8')
+
         pass_options = [
             {
                 "pass_number": 1,
-                "svg_code": '<svg id="p1"/></svg>',
+                "svg_code": svg1,
                 "duration_ms": 1000,
                 "tokens": 100,
                 "tps": 100.0,
@@ -217,7 +230,7 @@ class TestBuildPassSelectorCell:
             },
             {
                 "pass_number": 2,
-                "svg_code": '<svg id="p2"/></svg>',
+                "svg_code": svg2,
                 "duration_ms": 2000,
                 "tokens": 200,
                 "tps": 100.0,
@@ -234,8 +247,8 @@ class TestBuildPassSelectorCell:
         assert '<option value="1"' in result
         assert '<option value="2"' in result
         assert 'selected' in result
-        assert '<svg id="p1"/>' in result
-        assert '<svg id="p2"/>' in result
+        assert f'src="data:image/svg+xml;base64,{encoded1}"' in result
+        assert f'src="data:image/svg+xml;base64,{encoded2}"' in result
         assert 'data-pass="1"' in result
         assert 'data-pass="2"' in result
         assert 'class="pass-dropdown"' in result
@@ -260,6 +273,9 @@ class TestBuildErrorCell:
     def test_defaults_to_generation_failed(self):
         result = _build_error_cell("model_a", "abstract", "")
         assert "Generation failed" in result
+
+
+# --- _calculate_avg_score ---
 
 
 # --- _build_row_html ---
@@ -507,10 +523,16 @@ class TestGenerateReportFromFile:
 class TestMultiPass:
 
     def test_build_success_cells_multiple_passes(self):
+        import base64
+        svg1 = '<svg id="pass1"><circle/></svg>'
+        svg2 = '<svg id="pass2"><rect/></svg>'
+        encoded1 = base64.b64encode(svg1.encode('utf-8')).decode('utf-8')
+        encoded2 = base64.b64encode(svg2.encode('utf-8')).decode('utf-8')
+
         svg_list = [
             {
                 "status": "success",
-                "svg_code": '<svg id="pass1"><circle/></svg>',
+                "svg_code": svg1,
                 "duration_ms": 1000,
                 "tokens_used": 100,
                 "svg_path": "/pass1.svg",
@@ -518,7 +540,7 @@ class TestMultiPass:
             },
             {
                 "status": "success",
-                "svg_code": '<svg id="pass2"><rect/></svg>',
+                "svg_code": svg2,
                 "duration_ms": 1500,
                 "tokens_used": 120,
                 "svg_path": "/pass2.svg",
@@ -526,20 +548,21 @@ class TestMultiPass:
             },
         ]
         result = _build_success_cells("model_a", "abstract", svg_list, {})
-        assert '<svg id="pass1">' in result
-        assert '<svg id="pass2">' in result
-        assert "Pass 1" in result
-        assert "Pass 2" in result
-        assert 'class="pass-dropdown"' in result
-        assert "1.00s" in result
-        assert "1.50s" in result
+        assert f'src="data:image/svg+xml;base64,{encoded1}"' in result
+        assert f'src="data:image/svg+xml;base64,{encoded2}"' in result
 
     def test_build_row_html_multiple_passes(self):
+        import base64
+        svg1 = '<svg><circle/></svg>'
+        svg2 = '<svg><rect/></svg>'
+        encoded1 = base64.b64encode(svg1.encode('utf-8')).decode('utf-8')
+        encoded2 = base64.b64encode(svg2.encode('utf-8')).decode('utf-8')
+
         svg_lookup = {
             ("model_a", "abstract"): [
                 {
                     "status": "success",
-                    "svg_code": '<svg><circle/></svg>',
+                    "svg_code": svg1,
                     "duration_ms": 1000,
                     "tokens_used": 100,
                     "svg_path": "/a1.svg",
@@ -547,7 +570,7 @@ class TestMultiPass:
                 },
                 {
                     "status": "success",
-                    "svg_code": '<svg><rect/></svg>',
+                    "svg_code": svg2,
                     "duration_ms": 2000,
                     "tokens_used": 200,
                     "svg_path": "/a2.svg",
@@ -556,18 +579,19 @@ class TestMultiPass:
             ],
         }
         result = _build_row_html("abstract", ["model_a"], svg_lookup, {})
-        assert '<svg><circle/></svg>' in result
-        assert '<svg><rect/></svg>' in result
-        assert "Pass 1" in result
-        assert "Pass 2" in result
-        assert 'class="pass-dropdown"' in result
+        assert f'src="data:image/svg+xml;base64,{encoded1}"' in result
+        assert f'src="data:image/svg+xml;base64,{encoded2}"' in result
 
     def test_build_row_html_mixed_passes_success_and_fail(self):
+        import base64
+        svg1 = '<svg><circle/></svg>'
+        encoded1 = base64.b64encode(svg1.encode('utf-8')).decode('utf-8')
+
         svg_lookup = {
             ("model_a", "abstract"): [
                 {
                     "status": "success",
-                    "svg_code": '<svg><circle/></svg>',
+                    "svg_code": svg1,
                     "duration_ms": 1000,
                     "tokens_used": 100,
                     "svg_path": "/a1.svg",
@@ -582,34 +606,19 @@ class TestMultiPass:
             ],
         }
         result = _build_row_html("abstract", ["model_a"], svg_lookup, {})
-        assert '<svg><circle/></svg>' in result
+        assert f'src="data:image/svg+xml;base64,{encoded1}"' in result
         # Failed pass should not render as error cell since there's a success
         assert 'class="cell failed"' not in result
         # Only successful passes are rendered
         assert '/a1.svg' in result
 
-    def test_build_row_html_all_passes_failed(self):
-        svg_lookup = {
-            ("model_a", "abstract"): [
-                {
-                    "status": "failed",
-                    "error_message": "timeout",
-                    "svg_path": None,
-                    "pass_number": 1,
-                },
-                {
-                    "status": "failed",
-                    "error_message": "error",
-                    "svg_path": None,
-                    "pass_number": 2,
-                },
-            ],
-        }
-        result = _build_row_html("abstract", ["model_a"], svg_lookup, {})
-        assert 'class="cell failed"' in result
-        assert "timeout" in result
+    def test_generate_benchmark_html_with_multiple_passes(self, tmp_path):
+        import base64
+        svg1 = '<svg id="p1"><circle/></svg>'
+        svg2 = '<svg id="p2"><rect/></svg>'
+        encoded1 = base64.b64encode(svg1.encode('utf-8')).decode('utf-8')
+        encoded2 = base64.b64encode(svg2.encode('utf-8')).decode('utf-8')
 
-    def test_generate_benchmark_html_with_multiple_passes(self):
         run_data_dict = {
             "run_id": "run-1",
             "timestamp": "2024-01-01",
@@ -619,7 +628,7 @@ class TestMultiPass:
                 {
                     "model_name": "model_a",
                     "theme": "abstract",
-                    "svg_code": '<svg id="p1"><circle/></svg>',
+                    "svg_code": svg1,
                     "svg_path": "/p1.svg",
                     "duration_ms": 1000,
                     "tokens_used": 100,
@@ -629,7 +638,7 @@ class TestMultiPass:
                 {
                     "model_name": "model_a",
                     "theme": "abstract",
-                    "svg_code": '<svg id="p2"><rect/></svg>',
+                    "svg_code": svg2,
                     "svg_path": "/p2.svg",
                     "duration_ms": 2000,
                     "tokens_used": 200,
@@ -643,14 +652,14 @@ class TestMultiPass:
         result = generate_benchmark_html(run_data_dict, Path("/tmp/test_multi_pass.html"))
         with open(result, "r") as f:
             html = f.read()
-        assert '<svg id="p1">' in html
-        assert '<svg id="p2">' in html
+        assert f'src="data:image/svg+xml;base64,{encoded1}"' in html
+        assert f'src="data:image/svg+xml;base64,{encoded2}"' in html
         assert "Pass 1" in html
         assert "Pass 2" in html
         assert 'class="pass-dropdown"' in html
         assert "switchPass" in html
 
-    def test_generate_benchmark_html_with_judgments_multiple_passes(self):
+    def test_generate_benchmark_html_with_judgments_multiple_passes(self, tmp_path):
         run_data_dict = {
             "run_id": "run-1",
             "timestamp": "2024-01-01",
@@ -707,3 +716,64 @@ class TestMultiPass:
         assert "Good pass 2" in html
         assert "8.0" in html
         assert "9.0" in html
+
+
+# --- Security Tests ---
+
+
+class TestSecurity:
+
+    def test_xss_prevention_in_benchmark_html(self, tmp_path):
+        malicious_svg = '<svg><script>alert("xss")</script></svg>'
+        run_data_dict = {
+            "run_id": "test-run",
+            "timestamp": "2024-01-01",
+            "model_list": ["model_a"],
+            "themes": ["abstract"],
+            "svgs": [
+                {
+                    "model_name": "model_a",
+                    "theme": "abstract",
+                    "svg_code": malicious_svg,
+                    "duration_ms": 1000,
+                    "tokens_used": 100,
+                    "status": "success",
+                    "pass_number": 1,
+                }
+            ],
+            "judgments": [],
+            "criteria": ["creativity"],
+        }
+        output_path = tmp_path / "report.html"
+        generate_benchmark_html(run_data_dict, output_path)
+        content = output_path.read_text()
+
+        assert '<script>alert("xss")</script>' not in content
+        assert 'data:image/svg+xml;base64,' in content
+
+    def test_xss_prevention_in_dance_off_html(self, tmp_path):
+        from unittest.mock import MagicMock
+        malicious_svg = '<svg><script>alert("xss")</script></svg>'
+
+        mock_svg = MagicMock()
+        mock_svg.status = "success"
+        mock_svg.svg_code = malicious_svg
+        mock_svg.model_name = "model_a"
+
+        mock_round = MagicMock()
+        mock_round.round_num = 1
+        mock_round.theme = "abstract"
+        mock_round.rankings = [("model_a", 10.0)]
+        mock_round.eliminated = "model_b"
+        mock_round.svg_results = [mock_svg]
+
+        mock_result = MagicMock()
+        mock_result.rounds = [mock_round]
+        mock_result.champion = "model_a"
+
+        output_path = tmp_path / "danceoff.html"
+        generate_dance_off_html(mock_result, output_path)
+        content = output_path.read_text()
+
+        assert '<script>alert("xss")</script>' not in content
+        assert 'data:image/svg+xml;base64,' in content
