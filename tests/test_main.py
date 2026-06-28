@@ -1,6 +1,11 @@
+import re
 from unittest.mock import patch
 
 from main import get_config, parse_models
+
+
+def _strip_ansi(text: str) -> str:
+    return re.sub(r'\x1b\[[0-9;]*m', '', text)
 
 
 class TestGetConfig:
@@ -100,12 +105,13 @@ class TestDanceOffCommand:
         """Dance-off command --help shows all options."""
         from main import app
         result = cli_runner.invoke(app, ["dance-off", "--help"])
+        output = _strip_ansi(result.output)
         assert result.exit_code == 0
-        assert "--models" in result.output
-        assert "--theme-pool" in result.output
-        assert "--judges" in result.output
-        assert "--output" in result.output
-        assert "--svg-per-model" in result.output
+        assert "--models" in output
+        assert "--theme-pool" in output
+        assert "--judges" in output
+        assert "--output" in output
+        assert "--svg-per-model" in output
 
     def test_dance_off_command_exists(self, cli_runner):
         """Dance-off command is registered in the app."""

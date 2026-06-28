@@ -41,9 +41,9 @@ class TestJudgment:
             complexity_score=0.7,
          )
         assert judgment.svg_id == "svg-001"
-        assert judgment.creativity_score == 0.9
-        assert judgment.aesthetics_score == 0.8
-        assert judgment.complexity_score == 0.7
+        assert judgment.creativity_score == pytest.approx(0.9)
+        assert judgment.aesthetics_score == pytest.approx(0.8)
+        assert judgment.complexity_score == pytest.approx(0.7)
         assert not hasattr(judgment, "scores")
 
     def test_creation_with_minimal_fields(self):
@@ -75,10 +75,10 @@ class TestSVGScore:
         )
         assert svg_score.svg_id == "svg-001"
         assert svg_score.model_name == "model_a"
-        assert svg_score.creativity_score == 0.9
-        assert svg_score.aesthetics_score == 0.8
-        assert svg_score.complexity_score == 0.7
-        assert svg_score.total_score == 1.43
+        assert svg_score.creativity_score == pytest.approx(0.9)
+        assert svg_score.aesthetics_score == pytest.approx(0.8)
+        assert svg_score.complexity_score == pytest.approx(0.7)
+        assert svg_score.total_score == pytest.approx(1.43)
         assert svg_score.judgment_count == 2
 
     def test_default_scores_dict(self):
@@ -94,8 +94,8 @@ class TestSVGScore:
             model_name="model_a",
             scores={"creativity": 0.9, "dancing": 9.5},
         )
-        assert svg_score.get_score("creativity") == 0.9
-        assert svg_score.get_score("dancing") == 9.5
+        assert svg_score.get_score("creativity") == pytest.approx(0.9)
+        assert svg_score.get_score("dancing") == pytest.approx(9.5)
 
     def test_get_score_missing(self):
         svg_score = SVGScore(
@@ -103,7 +103,7 @@ class TestSVGScore:
             model_name="model_a",
             scores={"creativity": 0.9},
         )
-        assert svg_score.get_score("nonexistent") == 0.0
+        assert svg_score.get_score("nonexistent") == pytest.approx(0.0)
 
 
 # -- LeaderboardEntry tests --
@@ -121,7 +121,7 @@ class TestLeaderboardEntry:
         assert entry.rank == 1
         assert entry.svg_id == "svg-001"
         assert entry.model_name == "model_a"
-        assert entry.total_score == 0.85
+        assert entry.total_score == pytest.approx(0.85)
         assert entry.judgment_count == 3
 
     def test_from_svg_score(self):
@@ -136,7 +136,7 @@ class TestLeaderboardEntry:
         assert entry.rank == 1
         assert entry.svg_id == "svg-001"
         assert entry.model_name == "model_a"
-        assert entry.total_score == 0.85
+        assert entry.total_score == pytest.approx(0.85)
         assert entry.judgment_count == 3
         assert entry.svg_files == ["file1.svg"]
         assert entry.scores == {"creativity": 0.9, "aesthetics": 0.8}
@@ -161,9 +161,9 @@ class TestLeaderboardEntry:
             model_name="model_a",
             scores={"creativity": 0.9, "aesthetics": 0.8},
         )
-        assert entry.get_score("creativity") == 0.9
-        assert entry.get_score("aesthetics") == 0.8
-        assert entry.get_score("nonexistent") == 0.0
+        assert entry.get_score("creativity") == pytest.approx(0.9)
+        assert entry.get_score("aesthetics") == pytest.approx(0.8)
+        assert entry.get_score("nonexistent") == pytest.approx(0.0)
 
 
 # -- Leaderboard tests --
@@ -242,9 +242,9 @@ class TestRankingSystem:
         assert svg_score.svg_id == "model_a"
         assert svg_score.model_name == "model_a"
         assert svg_score.judgment_count == 1
-        assert svg_score.scores["creativity"] == 0.9
-        assert svg_score.scores["aesthetics"] == 0.8
-        assert svg_score.scores["complexity"] == 0.7
+        assert svg_score.scores["creativity"] == pytest.approx(0.9)
+        assert svg_score.scores["aesthetics"] == pytest.approx(0.8)
+        assert svg_score.scores["complexity"] == pytest.approx(0.7)
 
     def test_aggregate_all_judgments_multiple_averaging(self, mock_config):
         system = RankingSystem(mock_config)
@@ -272,9 +272,9 @@ class TestRankingSystem:
         results = system.aggregate_all_judgments(run_data, run_data.judgments)
         svg_score = results["model_a"]
         assert svg_score.judgment_count == 2
-        assert svg_score.scores["creativity"] == 0.8
-        assert svg_score.scores["aesthetics"] == 0.8
-        assert svg_score.scores["complexity"] == 0.8
+        assert svg_score.scores["creativity"] == pytest.approx(0.8)
+        assert svg_score.scores["aesthetics"] == pytest.approx(0.8)
+        assert svg_score.scores["complexity"] == pytest.approx(0.8)
 
     def test_aggregate_all_judgments_new_format_scores_dict(self, mock_config):
         system = RankingSystem(mock_config)
@@ -290,8 +290,8 @@ class TestRankingSystem:
         run_data.judgments = [judgment]
         results = system.aggregate_all_judgments(run_data, run_data.judgments)
         svg_score = results["model_a"]
-        assert svg_score.scores["creativity"] == 0.9
-        assert svg_score.scores["aesthetics"] == 8.0
+        assert svg_score.scores["creativity"] == pytest.approx(0.9)
+        assert svg_score.scores["aesthetics"] == pytest.approx(8.0)
 
     def test_aggregate_all_judgments_old_format_individual_scores(self, mock_config):
         system = RankingSystem(mock_config)
@@ -310,9 +310,9 @@ class TestRankingSystem:
         ]
         results = system.aggregate_all_judgments(run_data, run_data.judgments)
         svg_score = results["model_a"]
-        assert svg_score.scores["creativity"] == 0.5
-        assert svg_score.scores["aesthetics"] == 0.6
-        assert svg_score.scores["complexity"] == 0.7
+        assert svg_score.scores["creativity"] == pytest.approx(0.5)
+        assert svg_score.scores["aesthetics"] == pytest.approx(0.6)
+        assert svg_score.scores["complexity"] == pytest.approx(0.7)
 
     def test_calculate_final_ranking_sort_order(self, mock_config):
         system = RankingSystem(mock_config)
@@ -324,11 +324,11 @@ class TestRankingSystem:
         rankings = system.calculate_final_ranking(scores)
         assert len(rankings) == 3
         assert rankings[0].rank == 1
-        assert rankings[0].total_score == 0.9
+        assert rankings[0].total_score == pytest.approx(0.9)
         assert rankings[1].rank == 2
-        assert rankings[1].total_score == 0.6
+        assert rankings[1].total_score == pytest.approx(0.6)
         assert rankings[2].rank == 3
-        assert rankings[2].total_score == 0.3
+        assert rankings[2].total_score == pytest.approx(0.3)
 
     def test_calculate_final_ranking_assign_ranks(self, mock_config):
         system = RankingSystem(mock_config)
@@ -497,10 +497,10 @@ class TestRankingSystem:
         )
         stats = system.get_svg_stats(leaderboard, "svg-001")
         assert stats["rank"] == 1
-        assert stats["creativity"] == 0.9
-        assert stats["aesthetics"] == 0.8
-        assert stats["complexity"] == 0.7
-        assert stats["total"] == 0.9
+        assert stats["creativity"] == pytest.approx(0.9)
+        assert stats["aesthetics"] == pytest.approx(0.8)
+        assert stats["complexity"] == pytest.approx(0.7)
+        assert stats["total"] == pytest.approx(0.9)
         assert stats["judgments_received"] == 3
         assert stats["svg_files"] == ["file1.svg", "file2.svg"]
 
