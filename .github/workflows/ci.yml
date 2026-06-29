@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   lint:
@@ -51,6 +50,8 @@ jobs:
     name: SonarCloud Analysis
     needs: test
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     steps:
       - uses: actions/checkout@v4
@@ -64,7 +65,7 @@ jobs:
           merge-multiple: true
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v3.1.0
+        uses: SonarSource/sonarcloud-github-action@383f7e52eae3ab0510c3cb0e7d9d150bbaeab838
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
