@@ -5,16 +5,16 @@ from src.benchmark import BenchmarkManager
 from src.ranking import RankingSystem, Judgment as DataclassJudgment
 
 class MockConfig:
-    def __init__(self):
-        self.OUTPUT_DIR = "/tmp/output"
-        self.benchmarks_dir = Path("/tmp/test_benchmarks")
-        self.leaderboards_dir = Path("/tmp/test_leaderboards")
-        self.svgs_dir = Path("/tmp/test_svgs")
+    def __init__(self, base_dir: Path):
+        self.OUTPUT_DIR = base_dir / "output"
+        self.benchmarks_dir = base_dir / "test_benchmarks"
+        self.leaderboards_dir = base_dir / "test_leaderboards"
+        self.svgs_dir = base_dir / "test_svgs"
         self.judging_criteria = ["creativity", "aesthetics", "complexity"]
 
 @pytest.fixture
-def config():
-    cfg = MockConfig()
+def config(tmp_path):
+    cfg = MockConfig(tmp_path)
     cfg.benchmarks_dir.mkdir(parents=True, exist_ok=True)
     cfg.leaderboards_dir.mkdir(parents=True, exist_ok=True)
     cfg.svgs_dir.mkdir(parents=True, exist_ok=True)

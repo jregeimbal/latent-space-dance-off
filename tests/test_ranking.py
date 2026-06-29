@@ -5,8 +5,8 @@ from unittest.mock import Mock
 
 import pytest
 
+from src.svg_judge import Judgment
 from src.ranking import (
-    Judgment,
     Leaderboard,
     LeaderboardEntry,
     RankingSystem,
@@ -24,36 +24,22 @@ class TestJudgment:
             svg_id="svg-001",
             svg_model_name="model_a",
             judged_by="human-1",
-         )
-        judgment.scores = scores
+            scores=scores,
+        )
         assert judgment.svg_id == "svg-001"
         assert judgment.svg_model_name == "model_a"
         assert judgment.judged_by == "human-1"
         assert judgment.scores == scores
 
-    def test_creation_with_old_format_individual_scores(self):
-        judgment = Judgment(
-            svg_id="svg-001",
-            svg_model_name="model_a",
-            judged_by="human-1",
-            creativity_score=0.9,
-            aesthetics_score=0.8,
-            complexity_score=0.7,
-         )
-        assert judgment.svg_id == "svg-001"
-        assert judgment.creativity_score == pytest.approx(0.9)
-        assert judgment.aesthetics_score == pytest.approx(0.8)
-        assert judgment.scores == {}
 
     def test_creation_with_minimal_fields(self):
         judgment = Judgment(
             svg_id="svg-001",
             svg_model_name="model_a",
             judged_by="human-1",
-         )
+        )
         assert judgment.svg_id == "svg-001"
-        assert judgment.creativity_score is None
-        assert judgment.aesthetics_score is None
+
         assert judgment.scores == {}
 
 
@@ -65,17 +51,15 @@ class TestSVGScore:
         svg_score = SVGScore(
             svg_id="svg-001",
             model_name="model_a",
-            creativity_score=0.9,
-            aesthetics_score=0.8,
-            complexity_score=0.7,
             total_score=1.43,
             judgment_count=2,
+            scores={"creativity": 0.9, "aesthetics": 0.8, "complexity": 0.7},
         )
         assert svg_score.svg_id == "svg-001"
         assert svg_score.model_name == "model_a"
-        assert svg_score.creativity_score == pytest.approx(0.9)
-        assert svg_score.aesthetics_score == pytest.approx(0.8)
-        assert svg_score.complexity_score == pytest.approx(0.7)
+        assert svg_score.scores["creativity"] == pytest.approx(0.9)
+        assert svg_score.scores["aesthetics"] == pytest.approx(0.8)
+        assert svg_score.scores["complexity"] == pytest.approx(0.7)
         assert svg_score.total_score == pytest.approx(1.43)
         assert svg_score.judgment_count == 2
 
@@ -229,9 +213,7 @@ class TestRankingSystem:
                 svg_id="model_a_abstract_pass1",
                 svg_model_name="model_a",
                 judged_by="human-1",
-                creativity_score=0.9,
-                aesthetics_score=0.8,
-                complexity_score=0.7,
+                scores={"creativity": 0.9, "aesthetics": 0.8, "complexity": 0.7},
             )
         ]
         results = system.aggregate_all_judgments(run_data, run_data.judgments)
@@ -254,17 +236,13 @@ class TestRankingSystem:
                 svg_id="model_a_abstract_pass1",
                 svg_model_name="model_a",
                 judged_by="human-1",
-                creativity_score=0.6,
-                aesthetics_score=0.6,
-                complexity_score=0.6,
+                scores={"creativity": 0.6, "aesthetics": 0.6, "complexity": 0.6},
             ),
             Judgment(
                 svg_id="model_a_abstract_pass1",
                 svg_model_name="model_a",
                 judged_by="human-2",
-                creativity_score=1.0,
-                aesthetics_score=1.0,
-                complexity_score=1.0,
+                scores={"creativity": 1.0, "aesthetics": 1.0, "complexity": 1.0},
             ),
         ]
         results = system.aggregate_all_judgments(run_data, run_data.judgments)
@@ -283,34 +261,13 @@ class TestRankingSystem:
             svg_id="model_a_abstract_pass1",
             svg_model_name="model_a",
             judged_by="human-1",
-          )
-        judgment.scores = {"creativity": 0.9, "aesthetics": 8.0}
+            scores={"creativity": 0.9, "aesthetics": 8.0},
+        )
         run_data.judgments = [judgment]
         results = system.aggregate_all_judgments(run_data, run_data.judgments)
         svg_score = results["model_a"]
         assert svg_score.scores["creativity"] == pytest.approx(0.9)
         assert svg_score.scores["aesthetics"] == pytest.approx(8.0)
-
-    def test_aggregate_all_judgments_old_format_individual_scores(self, mock_config):
-        system = RankingSystem(mock_config)
-        run_data = Mock()
-        run_data.model_list = ["model_a"]
-        run_data.themes = ["abstract"]
-        run_data.judgments = [
-            Judgment(
-                svg_id="model_a_abstract_pass1",
-                svg_model_name="model_a",
-                judged_by="human-1",
-                creativity_score=0.5,
-                aesthetics_score=0.6,
-                complexity_score=0.7,
-            )
-        ]
-        results = system.aggregate_all_judgments(run_data, run_data.judgments)
-        svg_score = results["model_a"]
-        assert svg_score.scores["creativity"] == pytest.approx(0.5)
-        assert svg_score.scores["aesthetics"] == pytest.approx(0.6)
-        assert svg_score.scores["complexity"] == pytest.approx(0.7)
 
     def test_calculate_final_ranking_sort_order(self, mock_config):
         system = RankingSystem(mock_config)
@@ -350,17 +307,13 @@ class TestRankingSystem:
                 svg_id="model_a_abstract_pass1",
                 svg_model_name="model_a",
                 judged_by="human-1",
-                creativity_score=0.9,
-                aesthetics_score=0.8,
-                complexity_score=0.7,
+                scores={"creativity": 0.9, "aesthetics": 0.8, "complexity": 0.7},
             ),
             Judgment(
                 svg_id="model_b_abstract_pass1",
                 svg_model_name="model_b",
                 judged_by="human-1",
-                creativity_score=0.6,
-                aesthetics_score=0.5,
-                complexity_score=0.4,
+                scores={"creativity": 0.6, "aesthetics": 0.5, "complexity": 0.4},
             ),
         ]
         leaderboard = system.generate_leaderboard(run_data)

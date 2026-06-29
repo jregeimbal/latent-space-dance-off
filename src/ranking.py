@@ -14,19 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field
 # Import Config from src.config
 
 
-@dataclass
-class Judgment:
-    svg_id: str
-    svg_model_name: str
-    judged_by: str
-    creativity_score: Optional[float] = None
-    aesthetics_score: Optional[float] = None
-    complexity_score: Optional[float] = None
-    reason: Optional[str] = None
-    rank: Optional[int] = None
-    winner_svg: Optional[str] = None
-    judge_prompt: Optional[str] = None
-    scores: Dict[str, float] = field(default_factory=dict)
+from src.svg_judge import Judgment
 
 
 @dataclass
@@ -44,13 +32,10 @@ class RunData:
 class SVGScore:
     svg_id: str
     model_name: str
-    creativity_score: float = 0.0
-    aesthetics_score: float = 0.0
-    complexity_score: float = 0.0
     total_score: float = 0.0
     judgment_count: int = 0
-    scores: Optional[dict] = None    # Dynamic scores for custom criteria
-    
+    scores: Optional[dict] = None
+
     def __post_init__(self):
         if self.scores is None:
             self.scores = {}
@@ -116,9 +101,6 @@ class RankingSystem:
                         svg_id=j["svg_id"],
                         svg_model_name=j.get("svg_model_name", "unknown"),
                         judged_by=j["judged_by"],
-                        creativity_score=j.get("creativity_score") or scores_dict.get("creativity"),
-                        aesthetics_score=j.get("aesthetics_score") or scores_dict.get("aesthetics"),
-                        complexity_score=j.get("complexity_score") or scores_dict.get("complexity"),
                         reason=j.get("reason"),
                         rank=j.get("rank"),
                         winner_svg=j.get("winner_svg"),
@@ -132,9 +114,6 @@ class RankingSystem:
                         svg_id=getattr(j, "svg_id", ""),
                         svg_model_name=getattr(j, "svg_model_name", "unknown"),
                         judged_by=getattr(j, "judged_by", "unknown"),
-                        creativity_score=getattr(j, "creativity_score", p_scores.get("creativity")),
-                        aesthetics_score=getattr(j, "aesthetics_score", p_scores.get("aesthetics")),
-                        complexity_score=getattr(j, "complexity_score", p_scores.get("complexity")),
                         reason=getattr(j, "reason", None),
                         rank=getattr(j, "rank", None),
                         winner_svg=getattr(j, "winner_svg", None),
@@ -163,27 +142,20 @@ class RankingSystem:
                                                   scores={}, total_score=0.0, judgment_count=0)
             
             svg_score = scores[resolved_model]
-            
-            if hasattr(judgment, 'scores') and judgment.scores:
-                for criterion in self.config.judging_criteria:
-                    val = judgment.scores.get(criterion)
-                    if val is not None:
-                        if criterion not in svg_score.scores:
-                            svg_score.scores[criterion] = 0.0
-                        svg_score.scores[criterion] += val
-            else:
-                if judgment.creativity_score is not None:
-                    if 'creativity' not in svg_score.scores:
-                        svg_score.scores['creativity'] = 0.0
-                    svg_score.scores['creativity'] += judgment.creativity_score
-                if judgment.aesthetics_score is not None:
-                    if 'aesthetics' not in svg_score.scores:
-                        svg_score.scores['aesthetics'] = 0.0
-                    svg_score.scores['aesthetics'] += judgment.aesthetics_score
-                if judgment.complexity_score is not None:
-                    if 'complexity' not in svg_score.scores:
-                        svg_score.scores['complexity'] = 0.0
-                    svg_score.scores['complexity'] += judgment.complexity_score
+
+            matched_criteria = []
+            for criterion in self.config.judging_criteria:
+                score = judgment.scores.get(criterion)
+                if score is not None:
+                    svg_score.scores[criterion] = svg_score.scores.get(criterion, 0.0) + score
+                    matched_criteria.append(criterion)
+
+            if not matched_criteria:
+                import logging
+                logging.getLogger(__name__).warning(f"No criteria matched for judgment {judgment.svg_id} by {judgment.judged_by}")
+                continue
+
+
             svg_score.judgment_count += 1
         
         for svg_id in scores:

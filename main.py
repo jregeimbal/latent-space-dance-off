@@ -288,13 +288,8 @@ async def _run_impl(
             }
           # Convert judgments to dicts
         for j in getattr(run_data, 'judgments', []):
-               # Handle both old format (individual scores) and new format (scores dict)
-            scores_dict = j.scores if hasattr(j, 'scores') and j.scores else {
-                   "creativity": j.creativity_score if hasattr(j, 'creativity_score') else None,
-                   "aesthetics": j.aesthetics_score if hasattr(j, 'aesthetics_score') else None,
-                   "complexity": j.complexity_score if hasattr(j, 'complexity_score') else None
-                }
-            
+            scores_dict = j.scores
+
             run_data_dict["judgments"].append({
                     "svg_id": j.svg_id,
                     "judged_by": j.judged_by,

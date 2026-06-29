@@ -106,13 +106,8 @@ class BenchmarkManager:
         # Convert judgments to list of dicts
         judgments_list = []
         for j in getattr(run_data, 'judgments', []):
-             # Handle both old format (individual scores) and new format (scores dict)
-            scores_dict = j.scores if hasattr(j, 'scores') and j.scores else {
-                 "creativity": j.creativity_score if hasattr(j, 'creativity_score') else None,
-                 "aesthetics": j.aesthetics_score if hasattr(j, 'aesthetics_score') else None,
-                 "complexity": j.complexity_score if hasattr(j, 'complexity_score') else None
-             }
-            
+            scores_dict = j.scores
+
             judgments_list.append({
                  "svg_id": j.svg_id,
                  "judged_by": j.judged_by,
@@ -150,19 +145,8 @@ class BenchmarkManager:
         from src.svg_judge import Judgment
         judgments = []
         for j in data.get("judgments", []):
-            # Handle both old format (individual scores) and new format (scores dict)
-            scores = {}
-            if "scores" in j:
-                # New format with dynamic scores
-                scores = j.get("scores", {})
-            else:
-                # Old format with individual scores
-                scores = {
-                    "creativity": j.get("creativity_score"),
-                    "aesthetics": j.get("aesthetics_score"),
-                    "complexity": j.get("complexity_score")
-                }
-            
+            scores = j.get("scores", {})
+
             judgments.append(Judgment(
                 svg_id=j["svg_id"],
                 svg_model_name=j.get("svg_model_name", "unknown"),
