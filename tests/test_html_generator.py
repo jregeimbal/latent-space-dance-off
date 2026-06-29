@@ -11,12 +11,12 @@ from src.html_generator import (
     _build_success_cells,
     _build_pass_selector_cell,
     _render_judge_prompts,
-    calculate_tokens_per_second,
     format_duration,
     generate_benchmark_html,
     generate_dance_off_html,
     generate_report_from_file,
 )
+from src.utils import calculate_tokens_per_second
 
 
 # --- calculate_tokens_per_second ---

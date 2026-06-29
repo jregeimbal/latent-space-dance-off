@@ -70,11 +70,6 @@ class BenchmarkManager:
         self._current_run_dir = run_dir
         return run_dir
     
-    def calculate_tokens_per_second(self, tokens, duration_ms):
-        if duration_ms > 0:
-            return tokens / (duration_ms / 1000.0)
-        return 0.0
-    
     def record_generation(self, svg_result, run_id):
         benchmark_record = BenchmarkRecord(
             run_id=run_id,
