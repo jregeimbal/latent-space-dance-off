@@ -173,15 +173,18 @@ class TestWriteSvg:
 class TestCalculateTokensPerSecond:
     def test_normal_case(self):
         result = calculate_tokens_per_second(1024, 2048)
-        assert result == 500.0
+        assert result == pytest.approx(500.0)
 
     def test_zero_duration_returns_zero(self):
         result = calculate_tokens_per_second(100, 0)
-        assert result == 0.0
+        assert result == pytest.approx(0.0)
 
     def test_negative_duration_returns_zero(self):
         result = calculate_tokens_per_second(100, -500)
-        assert result == 0.0
+        assert result == pytest.approx(0.0)
+
+    def test_none_tokens_returns_zero(self):
+        assert calculate_tokens_per_second(None, 5000) == pytest.approx(0.0)
 
 
 # svg_to_ascii tests
