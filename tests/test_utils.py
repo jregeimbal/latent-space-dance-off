@@ -183,6 +183,9 @@ class TestCalculateTokensPerSecond:
         result = calculate_tokens_per_second(100, -500)
         assert result == 0.0
 
+    def test_none_tokens_returns_zero(self):
+        assert calculate_tokens_per_second(None, 5000) == 0.0
+
 
 # svg_to_ascii tests
 

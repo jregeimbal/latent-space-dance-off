@@ -13,6 +13,7 @@ from src.benchmark import (
     RunData,
     SVGResult,
 )
+from src.utils import calculate_tokens_per_second
 
 
 # -- BenchmarkRecord tests --
@@ -171,25 +172,16 @@ class TestBenchmarkManager:
         assert len(run_id) > 0
         assert "T" in run_id
 
-    def test_calculate_tokens_per_second_normal(self, mock_config, tmp_path):
-        mock_config.OUTPUT_DIR = str(tmp_path)
-        mock_config.benchmarks_dir = tmp_path / "benchmarks"
-        manager = BenchmarkManager(mock_config)
-        result = manager.calculate_tokens_per_second(1000, 2000)
+    def test_calculate_tokens_per_second_normal(self):
+        result = calculate_tokens_per_second(1000, 2000)
         assert result == 500.0
 
-    def test_calculate_tokens_per_second_zero_duration(self, mock_config, tmp_path):
-        mock_config.OUTPUT_DIR = str(tmp_path)
-        mock_config.benchmarks_dir = tmp_path / "benchmarks"
-        manager = BenchmarkManager(mock_config)
-        result = manager.calculate_tokens_per_second(1000, 0)
+    def test_calculate_tokens_per_second_zero_duration(self):
+        result = calculate_tokens_per_second(1000, 0)
         assert result == 0.0
 
-    def test_calculate_tokens_per_second_decimal(self, mock_config, tmp_path):
-        mock_config.OUTPUT_DIR = str(tmp_path)
-        mock_config.benchmarks_dir = tmp_path / "benchmarks"
-        manager = BenchmarkManager(mock_config)
-        result = manager.calculate_tokens_per_second(100, 333)
+    def test_calculate_tokens_per_second_decimal(self):
+        result = calculate_tokens_per_second(100, 333)
         assert isinstance(result, float)
         assert result == 100.0 / (333.0 / 1000.0)
 

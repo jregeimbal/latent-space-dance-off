@@ -5,6 +5,7 @@ import io
 import os
 import re
 import tempfile
+from typing import Optional
 
 import cairosvg
 from PIL import Image
@@ -117,11 +118,11 @@ def write_svg(svg, filepath):
         f.write(svg)
 
 
-def calculate_tokens_per_second(tokens, duration_ms):
+def calculate_tokens_per_second(tokens: Optional[int], duration_ms: float) -> float:
     """Calculate tokens per second rate."""
-    if duration_ms <= 0:
-        return 0.0
-    return tokens / (duration_ms / 1000.0)
+    if duration_ms > 0 and tokens is not None:
+        return tokens / (duration_ms / 1000.0)
+    return 0.0
 
 
 
