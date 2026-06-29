@@ -43,8 +43,14 @@ jobs:
           pytest \
             -n auto \
             --cov \
-            --cov-report=xml \
+            --cov-branch \
             --cov-report=term
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-data-${{ matrix.python-version }}
+          path: .coverage.${{ matrix.python-version }}
+          retention-days: 1
 
   sonarcloud:
     name: SonarCloud Analysis
@@ -58,11 +64,21 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install coverage
+
       - name: Download coverage from all matrix jobs
         uses: actions/download-artifact@v4
         with:
-          pattern: coverage-*
+          pattern: coverage-data-*
           merge-multiple: true
+
+      - name: Merge coverage data & generate XML
+        run: |
+          python -m coverage combine
+          python -m coverage xml
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@383f7e52eae3ab0510c3cb0e7d9d150bbaeab838
