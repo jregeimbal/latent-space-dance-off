@@ -381,12 +381,63 @@ class TestBuildHtml:
         result = _build_html(
             run_id="my-run",
             timestamp="",
-            models=[],
-            themes=[],
+            models=["model_a"],
+            themes=["theme-1"],
             svg_lookup=svg_lookup,
             judgments_lookup=judgments_lookup,
         )
         assert "my-run" in result
+
+    def test_empty_models_returns_error_html(self):
+        result = _build_html(
+            run_id="run-1",
+            timestamp="2024-01-01",
+            models=[],
+            themes=["theme-1"],
+            svg_lookup={},
+            judgments_lookup={},
+        )
+        assert "No data to display" in result
+        assert "models" in result
+        assert 'class="error"' in result
+
+    def test_empty_themes_returns_error_html(self):
+        result = _build_html(
+            run_id="run-1",
+            timestamp="2024-01-01",
+            models=["model_a"],
+            themes=[],
+            svg_lookup={},
+            judgments_lookup={},
+        )
+        assert "No data to display" in result
+        assert "themes" in result
+        assert 'class="error"' in result
+
+    def test_both_empty_returns_error_html(self):
+        result = _build_html(
+            run_id="run-1",
+            timestamp="2024-01-01",
+            models=[],
+            themes=[],
+            svg_lookup={},
+            judgments_lookup={},
+        )
+        assert "No data to display" in result
+        assert "models" in result
+        assert "themes" in result
+
+    def test_empty_data_does_not_contain_grid_container(self):
+        result = _build_html(
+            run_id="run-1",
+            timestamp="2024-01-01",
+            models=[],
+            themes=[],
+            svg_lookup={},
+            judgments_lookup={},
+        )
+        assert 'class="grid-container"' not in result
+        assert "repeat(0" not in result
 
 
 # --- generate_benchmark_html ---
