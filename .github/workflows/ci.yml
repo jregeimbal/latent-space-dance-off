@@ -69,19 +69,13 @@ jobs:
           python-version: "3.11"
       - run: pip install coverage
 
-      - name: Download coverage from all matrix jobs
+      - name: Download coverage from 3.11 job
         uses: actions/download-artifact@v4
         with:
-          path: coverage-data
-      - name: List downloaded files (debug)
-        run: find coverage-data -type f
-
-      - name: Merge coverage data & generate XML
+          name: coverage-data-3.11
+      - name: Generate coverage XML
         run: |
-          cp coverage-data/coverage-data-3.10/.coverage.3.10 .coverage.3.10
-          cp coverage-data/coverage-data-3.11/.coverage.3.11 .coverage.3.11
-          cp coverage-data/coverage-data-3.12/.coverage.3.12 .coverage.3.12
-          python -m coverage combine
+          cp .coverage.3.11 .coverage
           python -m coverage xml
 
       - name: SonarCloud Scan
