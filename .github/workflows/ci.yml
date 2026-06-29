@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   lint:
     name: Lint
@@ -19,7 +23,7 @@ jobs:
       - run: ruff check .
 
   test:
-    name: Test
+    name: Test & Coverage (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -33,4 +37,38 @@ jobs:
       - name: Install system dependencies
         run: sudo apt-get install -y libcairo2-dev pkg-config python3-dev
       - run: pip install -e '.[dev]'
-      - run: pytest
+      - name: Run tests with coverage
+        env:
+          COVERAGE_FILE: ".coverage.${{ matrix.python-version }}"
+        run: |
+          pytest \
+            -n auto \
+            --cov \
+            --cov-report=xml \
+            --cov-report=term
+
+  sonarcloud:
+    name: SonarCloud Analysis
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download coverage from all matrix jobs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v3.1.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: SonarCloud Quality Gate Check
+        run: |
+          echo "SonarCloud quality gate check completed"

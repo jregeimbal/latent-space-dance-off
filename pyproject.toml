@@ -49,6 +49,8 @@ target-version = ["py39", "py310", "py311"]
 dev = [
      "pytest",
      "pytest-asyncio",
+     "pytest-cov>=6.0.0",
+     "pytest-xdist",
      "ruff",
 ]
 
@@ -57,3 +59,19 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_functions = "test_*"
 asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "tests/*",
+    "*/__pycache__/*",
+]
+relative_files = true
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_empty = true
+
+[tool.coverage.html]
+directory = "htmlcov"
