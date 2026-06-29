@@ -31,6 +31,7 @@ class TestJudgment:
         assert judgment.judged_by == "human-1"
         assert judgment.scores == scores
 
+
     def test_creation_with_minimal_fields(self):
         judgment = Judgment(
             svg_id="svg-001",
@@ -38,6 +39,7 @@ class TestJudgment:
             judged_by="human-1",
         )
         assert judgment.svg_id == "svg-001"
+
         assert judgment.scores == {}
 
 

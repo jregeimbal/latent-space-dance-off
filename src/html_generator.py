@@ -99,6 +99,56 @@ def _build_html(run_id: str, timestamp: str, models: List[str],
                 themes: List[str], svg_lookup: dict, judgments_lookup: dict,
                 criteria_display: str = "Creativity, Aesthetics, Complexity") -> str:
 
+    if not models or not themes:
+        missing = []
+        if not models:
+            missing.append("models")
+        if not themes:
+            missing.append("themes")
+        return f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Latent Space Dance Off - {html.escape(run_id)}</title>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f0f;
+            color: #e0e0e0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }}
+        .error {{
+            text-align: center;
+            padding: 40px;
+            background: #1a1a1a;
+            border: 1px solid #ff4444;
+            border-radius: 12px;
+            max-width: 600px;
+        }}
+        .error h2 {{
+            color: #ff4444;
+            margin-bottom: 16px;
+        }}
+        .error p {{
+            color: #ccc;
+            line-height: 1.6;
+        }}
+    </style>
+</head>
+<body>
+    <div class="error">
+        <h2>No data to display</h2>
+        <p>Missing required data: {html.escape(", ".join(missing))}</p>
+        <p>Run ID: {html.escape(run_id)}</p>
+    </div>
+</body>
+</html>'''
+
     theme_labels_html = ""
     for theme in themes:
         short_theme = theme if len(theme) <= 40 else theme[:37] + "..."

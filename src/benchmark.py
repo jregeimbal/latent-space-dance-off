@@ -160,8 +160,9 @@ class BenchmarkManager:
                 judge_prompt=j.get("judge_prompt")
              ))
         return RunData(run_id=data["run_id"], timestamp=data["timestamp"],
-                      svgs=svgs, benchmarks=benchmarks,
-                      model_list=data["model_list"], themes=data["themes"])
+                                      svgs=svgs, benchmarks=benchmarks,
+                                      model_list=data["model_list"], themes=data["themes"],
+                                      judgments=judgments)
     
     def get_latest_run_id(self):
         try:
