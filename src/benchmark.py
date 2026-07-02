@@ -62,7 +62,7 @@ class BenchmarkManager:
     def generate_run_id(self):
         return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")
     
-    def _ensure_run_dir(self, run_id: str) -> Path:
+    def ensure_run_dir(self, run_id: str) -> Path:
         """Create and return the run directory: output/benchmarks/{run_id}/"""
         run_dir = self.config.benchmarks_dir / run_id
         run_dir.mkdir(parents=True, exist_ok=True)
@@ -82,7 +82,7 @@ class BenchmarkManager:
         return benchmark_record
     
     def save_run_data(self, run_data):
-        run_dir = self._ensure_run_dir(run_data.run_id)
+        run_dir = self.ensure_run_dir(run_data.run_id)
         filepath = run_dir / "benchmark.json"
         json_data = {
             "run_id": run_data.run_id,
