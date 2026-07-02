@@ -165,7 +165,7 @@ async def _run_impl(
     run_id = benchmark_manager.generate_run_id()
     console.print(f"[yellow]Run ID: {run_id}[/yellow]")
     # Create run directory with assets subfolder
-    run_dir = benchmark_manager._ensure_run_dir(run_id)
+    run_dir = benchmark_manager.ensure_run_dir(run_id)
     assets_dir = run_dir / "assets"
     svg_generator = SVGGenerator(config, svgs_dir=assets_dir)
     console.print(f"[yellow]Output directory: {run_dir}[/yellow]")
@@ -560,7 +560,7 @@ async def _dance_off_impl(
 
     # Create run directory using BenchmarkManager
     run_id = benchmark_manager.generate_run_id()
-    run_dir = benchmark_manager._ensure_run_dir(run_id)
+    run_dir = benchmark_manager.ensure_run_dir(run_id)
     assets_dir = run_dir / "assets"
     assets_dir.mkdir(parents=True, exist_ok=True)
 
