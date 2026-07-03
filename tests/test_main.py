@@ -100,6 +100,15 @@ class TestParseModels:
         assert result == ["m1", "m2"]
 
 
+class TestNoGlobalSpinnersMutation:
+    def test_no_global_spinners_mutation(self):
+        from rich._spinners import SPINNERS
+        before_keys = set(SPINNERS.keys())
+        import main  # noqa: F401
+        after_keys = set(SPINNERS.keys())
+        assert "spinner_frames" not in (after_keys - before_keys)
+
+
 class TestDanceOffCommand:
     def test_dance_off_help_shows_options(self, cli_runner):
         """Dance-off command --help shows all options."""

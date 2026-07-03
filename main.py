@@ -14,10 +14,10 @@ import typer
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
-from rich._spinners import SPINNERS
+from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn
 
 from src.config import Config
+from src.custom_spinner import CustomSpinnerColumn
 from src.model_manager import ModelManager
 from src.svg_generator import SVGGenerator
 from src.svg_judge import SVGJudge
@@ -33,13 +33,6 @@ app = typer.Typer(
 )
 
 console = Console()
-
-spinner_frames = ["◤", "▀", "◥", "▐", "◢", "▂", "◣", "▌"]
-# Register the custom spinner in the global SPINNERS dictionary
-SPINNERS["spinner_frames"] = {
-    "interval": 120,  # Milliseconds between frames
-    "frames": spinner_frames
-}
 
 def get_config(
     ollama_host: str = "http://localhost:11434",
@@ -172,7 +165,7 @@ async def _run_impl(
     console.print(f"\n[cyan]Generating SVGs for {len(model_clients)} models x {len(theme_list)} themes x {num_passes} passes...[/cyan]")
 
     with Progress(
-        SpinnerColumn(spinner_name="spinner_frames", style="green"),
+        CustomSpinnerColumn(style="green"),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
         TaskProgressColumn(),
@@ -253,7 +246,7 @@ async def _run_impl(
         svg_judge_count = len(list(model_clients.values())) * len(svg_results)
         
         with Progress(
-            SpinnerColumn(spinner_name="spinner_frames", style="green"),
+            CustomSpinnerColumn(style="green"),
             TextColumn("[progress.description]{task.description}"),
             BarColumn(),
             TaskProgressColumn(),
@@ -588,7 +581,7 @@ async def _dance_off_impl(
 
     # Run dance-off with live progress
     with Progress(
-        SpinnerColumn(spinner_name="spinner_frames", style="green"),
+        CustomSpinnerColumn(style="green"),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
         TaskProgressColumn(),
