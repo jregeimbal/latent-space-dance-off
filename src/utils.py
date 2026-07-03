@@ -96,19 +96,14 @@ Your SVG should be at least 600x400 pixels and use SVG elements creatively."""
     return theme_prompts.get(theme, theme_prompts["abstract"])
 
 
-def format_duration(seconds):
-    """Format duration for display."""
+def format_duration(seconds: float) -> str:
+    """Format seconds as human-readable duration."""
     if seconds < 60:
         return f"{seconds:.1f}s"
     elif seconds < 3600:
-        minutes = int(seconds // 60)
-        remaining = seconds % 60
-        return f"{minutes}m {remaining:.1f}s"
+        return f"{seconds / 60:.2f}m"
     else:
-        hours = int(seconds // 3600)
-        minutes = int((seconds % 3600) // 60)
-        remaining = seconds % 60
-        return f"{hours}h {minutes}m {remaining:.1f}s"
+        return f"{seconds / 3600:.2f}h"
 
 
 def write_svg(svg, filepath):

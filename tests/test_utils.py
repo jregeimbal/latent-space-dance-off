@@ -112,28 +112,23 @@ class TestFormatDuration:
         assert format_duration(59.9) == "59.9s"
 
     def test_minutes_range(self):
-        assert format_duration(60) == "1m 0.0s"
-        assert format_duration(120) == "2m 0.0s"
+        assert format_duration(60) == "1.00m"
+        assert format_duration(120) == "2.00m"
 
     def test_hours_range(self):
-        result = format_duration(3600)
-        assert "h" in result
-        assert "1h 0m 0.0s" in result
+        assert format_duration(3600) == "1.00h"
 
     def test_hours_with_minutes(self):
-        result = format_duration(3665)
-        assert "1h 1m 5.0s" in result
+        assert format_duration(3665) == "1.02h"
 
     def test_zero_duration(self):
         assert format_duration(0) == "0.0s"
 
     def test_decimal_values(self):
-        result = format_duration(45.7)
-        assert result == "45.7s"
+        assert format_duration(45.7) == "45.7s"
 
     def test_very_small_values(self):
-        result = format_duration(0.5)
-        assert result == "0.5s"
+        assert format_duration(0.5) == "0.5s"
 
 
 # write_svg tests

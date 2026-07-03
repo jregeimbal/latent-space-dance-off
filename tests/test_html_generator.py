@@ -11,7 +11,6 @@ from src.html_generator import (
     _build_success_cells,
     _build_pass_selector_cell,
     _render_judge_prompts,
-    format_duration,
     generate_benchmark_html,
     generate_dance_off_html,
     generate_report_from_file,
@@ -35,24 +34,6 @@ class TestCalculateTokensPerSecond:
     def test_none_tokens(self):
         result = calculate_tokens_per_second(None, 5000)
         assert result == 0.0
-
-
-# --- format_duration ---
-
-
-class TestFormatDuration:
-
-    def test_seconds_less_than_60(self):
-        result = format_duration(30000)
-        assert result == "30.00s"
-
-    def test_minutes_60_to_3599_seconds(self):
-        result = format_duration(120000)
-        assert result == "2.00m"
-
-    def test_hours_greater_than_3600_seconds(self):
-        result = format_duration(7200000)
-        assert result == "2.00h"
 
 
 # --- _calculate_avg_score ---
@@ -165,7 +146,7 @@ class TestBuildPassSelectorCell:
         )
         assert "model_a" in result
         assert f'src="data:image/svg+xml;base64,{encoded}"' in result
-        assert "2.00s" in result
+        assert "2.0s" in result
         assert "400" in result
         assert "200.0" in result
         assert "Pass 1" in result

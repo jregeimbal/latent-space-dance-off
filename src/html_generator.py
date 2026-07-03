@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel
 
-from src.utils import calculate_tokens_per_second
+from src.utils import calculate_tokens_per_second, format_duration
 
 
 class SVGCellData(BaseModel):
@@ -25,19 +25,6 @@ class SVGCellData(BaseModel):
     tokens_used: Optional[int] = None
     status: str = "success"
     error_message: Optional[str] = None
-
-
-def format_duration(ms: float) -> str:
-    """Format duration in milliseconds to human-readable string."""
-    seconds = ms / 1000.0
-    if seconds < 60:
-        return f"{seconds:.2f}s"
-    elif seconds < 3600:
-        minutes = seconds / 60
-        return f"{minutes:.2f}m"
-    else:
-        hours = seconds / 3600
-        return f"{hours:.2f}h"
 
 
 def _encode_svg(svg_code: str) -> str:
@@ -597,7 +584,7 @@ def _build_pass_selector_cell(model: str, theme: str, pass_options: list) -> str
     for i, opt in enumerate(pass_options):
         is_first = (i == 0)
         display = "" if is_first else "display: none;"
-        duration_str = format_duration(opt["duration_ms"])
+        duration_str = format_duration(opt["duration_ms"] / 1000)
         tokens_str = f"{opt['tokens']:,}" if opt["tokens"] is not None else "N/A"
         tps_str = f"{opt['tps']:.1f}" if opt["tps"] > 0 else "N/A"
         judge_blocks_html = _render_judge_prompts(opt["judgments"]) if opt["judgments"] else ""
