@@ -22,6 +22,7 @@ class TestGetConfig:
                 DISABLE_JUDGING=False,
                 LLM_CLIENT="ollama",
                 LLM_HOST="",
+                THEME_POOL="",
             )
             assert result == MockConfig.return_value
 
@@ -74,6 +75,20 @@ class TestGetConfig:
 
             call_kwargs = MockConfig.call_args[1]
             assert call_kwargs["DISABLE_JUDGING"] is False
+
+    def test_overrides_theme_pool(self):
+        with patch("main.Config") as MockConfig:
+            get_config(theme_pool="nature,urban")
+
+            call_kwargs = MockConfig.call_args[1]
+            assert call_kwargs["THEME_POOL"] == "nature,urban"
+
+    def test_theme_pool_default_empty(self):
+        with patch("main.Config") as MockConfig:
+            get_config()
+
+            call_kwargs = MockConfig.call_args[1]
+            assert call_kwargs["THEME_POOL"] == ""
 
 
 class TestParseModels:

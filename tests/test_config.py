@@ -52,6 +52,10 @@ class TestDefaultValues:
         config = Config()
         assert config.DISABLE_JUDGING is False
 
+    def test_default_theme_pool(self):
+        config = Config()
+        assert config.THEME_POOL == "abstract,landscape,portrait,object,scene"
+
     def test_disable_judging_custom(self):
         config = Config(DISABLE_JUDGING=True)
         assert config.DISABLE_JUDGING is True
@@ -157,6 +161,32 @@ class TestJudgingCriteriaProperty:
     def test_judging_criteria_falsy_entries_filtered(self):
         config = Config(JUDGING_CRITERIA="style,,originality")
         assert config.judging_criteria == ["style", "originality"]
+
+
+# -- theme_pool property --
+
+
+class TestThemePoolProperty:
+
+    def test_theme_pool_default(self):
+        config = Config()
+        assert config.theme_pool == ["abstract", "landscape", "portrait", "object", "scene"]
+
+    def test_theme_pool_custom(self):
+        config = Config(THEME_POOL="nature,urban,abstract")
+        assert config.theme_pool == ["nature", "urban", "abstract"]
+
+    def test_theme_pool_empty_falls_back(self):
+        config = Config(THEME_POOL="")
+        assert config.theme_pool == ["abstract", "landscape", "portrait", "object", "scene"]
+
+    def test_theme_pool_whitespace(self):
+        config = Config(THEME_POOL=" nature , urban , abstract ")
+        assert config.theme_pool == ["nature", "urban", "abstract"]
+
+    def test_theme_pool_falsy_entries_filtered(self):
+        config = Config(THEME_POOL="nature,,urban")
+        assert config.theme_pool == ["nature", "urban"]
 
 
 # -- Path properties --
