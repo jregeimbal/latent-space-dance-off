@@ -14,8 +14,6 @@ data/
 
 *.pyo
 
-__pycache__/
-
 .pytest_cache/
 
 .coverage
@@ -34,4 +32,10 @@ __pycache__/
 
 .DS_Store
 
+.env
+
 output/
+
+dist/
+
+build/
