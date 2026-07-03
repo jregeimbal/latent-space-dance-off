@@ -73,6 +73,10 @@ class Config(BaseModel):
         default="creativity,aesthetics,complexity",
         description="Comma-separated list of judging criteria"
       )
+    THEME_POOL: str = Field(
+        default="abstract,landscape,portrait,object,scene",
+        description="Comma-separated theme pool for dance-off"
+    )
     DISABLE_JUDGING: bool = Field(
         default=False,
         description="When True, skip the judging phase entirely"
@@ -111,6 +115,13 @@ class Config(BaseModel):
         if not self.JUDGING_CRITERIA:
             return ["creativity", "aesthetics", "complexity"]
         return [c.strip() for c in self.JUDGING_CRITERIA.split(',') if c.strip()]
+
+    @property
+    def theme_pool(self) -> List[str]:
+        """Parse THEME_POOL into list of theme names."""
+        if not self.THEME_POOL:
+            return ["abstract", "landscape", "portrait", "object", "scene"]
+        return [t.strip() for t in self.THEME_POOL.split(',') if t.strip()]
 
     @property
     def svgs_dir(self) -> Path:

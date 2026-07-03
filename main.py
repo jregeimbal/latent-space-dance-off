@@ -50,6 +50,7 @@ def get_config(
     disable_judging: bool = False,
     client_type: str = "ollama",
     llm_host: str = "",
+    theme_pool: str = "",
 ):
     config = Config(
         OLLAMA_HOST=ollama_host,
@@ -60,6 +61,7 @@ def get_config(
         DISABLE_JUDGING=disable_judging,
         LLM_CLIENT=client_type,
         LLM_HOST=llm_host,
+        THEME_POOL=theme_pool,
     )
     return config
 
@@ -501,7 +503,7 @@ def runs(
 @app.command()
 def dance_off(
     models: Optional[str] = typer.Option(None, "--models", "-m", help="Comma-separated model names to compete"),
-    theme_pool: str = typer.Option("abstract,landscape,portrait,object,scene", "--theme-pool", "-tp", help="Comma-separated themes for audience-judge to pick from"),
+    theme_pool: Optional[str] = typer.Option(None, "--theme-pool", "-tp", help="Comma-separated themes for audience-judge to pick from (default: abstract,landscape,portrait,object,scene)"),
     num_judges: int = typer.Option(1, "--judges", "-j", help="Number of judge models (1 for theme selection + round judging)"),
     output_dir: str = typer.Option("./output", "--output", "-o"),
     ollama_host: str = typer.Option("http://localhost:11434", "--ollama-host", "--host"),
@@ -515,7 +517,7 @@ def dance_off(
 
 async def _dance_off_impl(
     models: Optional[str],
-    theme_pool: str,
+    theme_pool: Optional[str],
     num_judges: int,
     output_dir: str,
     ollama_host: str,
@@ -523,8 +525,8 @@ async def _dance_off_impl(
     llm_host: str,
     svg_per_model: int,
 ):
-    theme_list = [t.strip() for t in theme_pool.split(",")]
-    config = get_config(ollama_host, output_dir, num_judges, "", "", False, client_type, llm_host)
+    config = get_config(ollama_host, output_dir, num_judges, "", "", False, client_type, llm_host, theme_pool=theme_pool or "")
+    theme_list = config.theme_pool
 
     model_manager = ModelManager(host=config.llm_host, client_type=config.LLM_CLIENT)
     benchmark_manager = BenchmarkManager(config)
