@@ -588,15 +588,18 @@ def _build_pass_selector_cell(model: str, theme: str, pass_options: list) -> str
     
     # Build pass option elements for the dropdown
     dropdown_options = ""
+    first_pass_num = pass_options[0]["pass_number"]
     for opt in pass_options:
-        selected = "selected" if opt["pass_number"] == pass_options[0]["pass_number"] else ""
-        dropdown_options += f'<option value="{opt["pass_number"]}" {selected}>Pass {opt["pass_number"]}</option>\n'
+        pass_num = opt["pass_number"]
+        selected = "selected" if pass_num == first_pass_num else ""
+        dropdown_options += f'<option value="{pass_num}" {selected}>Pass {pass_num}</option>\n'
     
     # Build content divs for each pass (only first is visible by default)
     pass_contents = ""
     for i, opt in enumerate(pass_options):
         is_first = (i == 0)
         display = "" if is_first else "display: none;"
+        pass_num = opt["pass_number"]
         duration_str = format_duration(opt["duration_ms"])
         tokens_str = f"{opt['tokens']:,}" if opt["tokens"] is not None else "N/A"
         tps_str = f"{opt['tps']:.1f}" if opt["tps"] > 0 else "N/A"
@@ -612,7 +615,9 @@ def _build_pass_selector_cell(model: str, theme: str, pass_options: list) -> str
                 </details>
             </div>'''
         
-        pass_contents += f'''        <div class="pass-content" data-pass="{opt["pass_number"]}" style="{display}">
+        svg_path = opt["svg_path"]
+        svg_path_html = f'<div class="svg-path">{html.escape(svg_path)}</div>' if svg_path else ''
+        pass_contents += f'''        <div class="pass-content" data-pass="{pass_num}" style="{display}">
             <div class="svg-container">
                 <img src="{_encode_svg(opt['svg_code'])}" style="max-width: 100%; height: auto;">
             </div>
@@ -630,7 +635,7 @@ def _build_pass_selector_cell(model: str, theme: str, pass_options: list) -> str
                     <div class="stat-label">Tok/s</div>
                 </div>
             </div>
-            {f'<div class="svg-path">{html.escape(opt["svg_path"])}</div>' if opt["svg_path"] else ''}
+            {svg_path_html}
             {judge_section}
         </div>
 '''
@@ -638,10 +643,13 @@ def _build_pass_selector_cell(model: str, theme: str, pass_options: list) -> str
     num_passes = len(pass_options)
     pass_label = f' ({num_passes} passes)' if num_passes > 1 else ''
     
+    first_avg_score = pass_options[0]["avg_score"]
+    score_html = f'<span class="cell-score">{first_avg_score:.2f}</span>' if first_avg_score is not None else ''
+    
     return f'''        <div class="cell">
             <div class="cell-header">
                 <span class="cell-model">{html.escape(model)}</span>
-                {f'<span class="cell-score">{pass_options[0]["avg_score"]:.2f}</span>' if pass_options[0]["avg_score"] is not None else ''}
+                {score_html}
             </div>
             <div class="pass-selector">
                 <select class="pass-dropdown" onchange="switchPass(this)">
