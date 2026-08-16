@@ -201,6 +201,71 @@ async def test_full_benchmark_pipeline(tmp_path):
     assert "image/svg+xml" in html_content
 
 
+def test_run_command_prints_ansi_ascii_art_intact(tmp_path, cli_runner):
+    """Regression: pre-colored ASCII art must reach stdout byte-for-byte.
+
+    Rich's console.print() mangles raw ANSI escape sequences (its highlighter
+    interleaves its own codes mid-sequence and its line wrapping counts escape
+    bytes as visible width), which made terminals render literal '[38;5;...'
+    text instead of colored art.
+    """
+    from unittest.mock import AsyncMock, Mock, patch
+
+    from main import app
+    from src.utils import svg_to_ascii
+
+    mock_client = MockLLMClient()
+    mock_manager = Mock()
+    mock_manager.get_model = AsyncMock(return_value=mock_client)
+
+    with patch("main.ModelManager", return_value=mock_manager):
+        result = cli_runner.invoke(
+            app,
+            [
+                "run",
+                "--models", "model-a",
+                "--themes", "abstract",
+                "--no-judging",
+                "--output", str(tmp_path),
+            ],
+        )
+
+    assert result.exit_code == 0, result.output
+    expected_art = svg_to_ascii(VALID_SVG, width=100, use_ansi=True)
+    assert "\x1b" in expected_art
+    for line in expected_art.split("\n"):
+        assert line in result.output, f"art line mangled or missing: {line[:80]!r}"
+
+
+def test_dance_off_command_prints_ansi_ascii_art_intact(tmp_path, cli_runner):
+    """Regression: dance-off round display must write ANSI art to stdout intact."""
+    from unittest.mock import AsyncMock, Mock, patch
+
+    from main import app
+    from src.utils import svg_to_ascii
+
+    mock_client = MockLLMClient()
+    mock_manager = Mock()
+    mock_manager.get_model = AsyncMock(return_value=mock_client)
+
+    with patch("main.ModelManager", return_value=mock_manager):
+        result = cli_runner.invoke(
+            app,
+            [
+                "dance-off",
+                "--models", "model-a,model-b",
+                "--svg-per-model", "1",
+                "--output", str(tmp_path),
+            ],
+        )
+
+    assert result.exit_code == 0, result.output
+    expected_art = svg_to_ascii(VALID_SVG, width=80, use_ansi=True)
+    assert "\x1b" in expected_art
+    for line in expected_art.split("\n"):
+        assert line in result.output, f"art line mangled or missing: {line[:80]!r}"
+
+
 async def test_dance_off_pipeline(tmp_path):
     from src.config import Config
     from src.dance_off import DanceOff
